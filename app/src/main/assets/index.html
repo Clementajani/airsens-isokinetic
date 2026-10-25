@@ -8,234 +8,460 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: instrument panel — inputs rack on the left, readout + lamp + flow trace on the right, time series below */
+/* Layout: mobile app shell — sticky app bar, one screen per task, bottom tab bar; welcome screen is a menu of tiles */
 :root{
   --bg:#eef2f4; --panel:#ffffff; --line:#d3dce1; --fg:#14232b; --muted:#5b6f7a;
-  --accent:#0e7c8c; --accent-soft:#d6eef1;
-  --ok:#1f9a4b; --warn:#d18a07; --bad:#c8372d; --led-off:#cfd8dc;
-  --band:rgba(31,154,75,.12);
+  --accent:#0e7c8c; --accent-soft:#d6eef1; --hero:#0f3a44; --hero-fg:#e6f4f6;
+  --ok:#1f9a4b; --ok-soft:#dcf1e3; --warn:#c27f05; --warn-soft:#fbeed2; --bad:#c8372d; --bad-soft:#f8dedb;
+  --led-off:#cfd8dc; --stream:rgba(14,124,140,.28);
   --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
   --f-body:"Barlow",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0d1519; --panel:#152127; --line:#26363e; --fg:#e3ecef; --muted:#8ea3ad;
-  --accent:#3cc0cf; --accent-soft:#163940; --ok:#3ccf72; --warn:#f0a929; --bad:#ef5b4f; --led-off:#2b3a41;
-  --band:rgba(60,207,114,.12); color-scheme:dark}}
+  --accent:#3cc0cf; --accent-soft:#163940; --hero:#0a2a31; --hero-fg:#e6f4f6;
+  --ok:#3ccf72; --ok-soft:#173a26; --warn:#f0a929; --warn-soft:#3d2f12; --bad:#ef5b4f; --bad-soft:#40201d;
+  --led-off:#2b3a41; --stream:rgba(60,192,207,.25); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d1519; --panel:#152127; --line:#26363e; --fg:#e3ecef; --muted:#8ea3ad;
-  --accent:#3cc0cf; --accent-soft:#163940; --ok:#3ccf72; --warn:#f0a929; --bad:#ef5b4f; --led-off:#2b3a41;
-  --band:rgba(60,207,114,.12); color-scheme:dark}
+  --accent:#3cc0cf; --accent-soft:#163940; --hero:#0a2a31; --hero-fg:#e6f4f6;
+  --ok:#3ccf72; --ok-soft:#173a26; --warn:#f0a929; --warn-soft:#3d2f12; --bad:#ef5b4f; --bad-soft:#40201d;
+  --led-off:#2b3a41; --stream:rgba(60,192,207,.25); color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
-.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px;display:grid;gap:16px}
-header{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:12px}
-.logo{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:.02em;color:var(--fg)}
-.logo svg{width:34px;height:34px}
-.logo b{color:var(--accent);font-weight:700}
-.brand h1{font-family:var(--f-display);font-weight:500;font-size:20px;margin:0;color:var(--muted);border-left:1px solid var(--line);padding-left:12px;text-wrap:balance}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-label.lbl,.lbl{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-select,input[type=number],input[type=text],textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0}
-input[type=number]{font-family:var(--f-mono);font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
-select:focus-visible,input:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-button{font:inherit;font-family:var(--f-display);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:13px;padding:8px 12px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
-button:hover{border-color:var(--accent);color:var(--accent)}
-button.primary{background:var(--accent);border-color:var(--accent);color:var(--panel)}
-button.primary:hover{filter:brightness(1.08);color:var(--panel)}
-.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
-@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:14px;min-width:0}
-.panel h2{font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.1em;text-transform:uppercase;margin:0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.panel h2 small{font-family:var(--f-body);font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted);font-size:13px}
-fieldset{border:0;padding:0;margin:0;display:grid;gap:8px}
-legend{padding:0;margin-bottom:6px}
-.row{display:grid;grid-template-columns:minmax(0,1.3fr) 5.2rem minmax(0,1fr) 5.5rem;gap:8px;align-items:center}
-.row .name{font-size:14px}
-.row .sym{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
-@media (max-width:460px){.row{grid-template-columns:minmax(0,1fr) 5rem 5.2rem}.row .sym{display:none}}
-.chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted)}
-.readout{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
-@media (max-width:460px){.readout{grid-template-columns:1fr}}
-.big{font-family:var(--f-mono);font-weight:600;font-size:clamp(44px,7vw,64px);line-height:1;font-variant-numeric:tabular-nums}
-.big small{font-size:.4em;color:var(--muted);margin-left:4px}
-.status{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
-.leds{display:flex;gap:10px}
-.led{display:grid;justify-items:center;gap:6px;font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);width:76px}
-.led i{width:30px;height:30px;border-radius:50%;background:var(--led-off);border:2px solid var(--line);transition:background .25s,box-shadow .25s}
-.led.on.u i{background:var(--warn);box-shadow:0 0 18px var(--warn)}
-.led.on.i i{background:var(--ok);box-shadow:0 0 18px var(--ok)}
-.led.on.o i{background:var(--bad);box-shadow:0 0 18px var(--bad)}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.inner{max-width:760px;margin:0 auto}
+
+/* app bar */
+.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+.appbar .inner{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:8px;padding-block:8px}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:0;background:transparent;color:var(--fg);cursor:pointer;padding:0}
+.iconbtn:hover{background:var(--accent-soft)}
+.iconbtn svg{width:22px;height:22px}
+.appbar h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:21px;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:13px;font-weight:600;padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer;font-variant-numeric:tabular-nums}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--led-off)}
+.s-i{--s:var(--ok);--s-soft:var(--ok-soft)} .s-u{--s:var(--warn);--s-soft:var(--warn-soft)} .s-o{--s:var(--bad);--s-soft:var(--bad-soft)}
+.chip.s-i i,.chip.s-u i,.chip.s-o i{background:var(--s)}
+.logo{display:inline-flex;align-items:center;gap:7px}
+.logo svg{width:28px;height:28px;flex:none}
+
+/* views */
+main{padding-block:16px calc(84px + env(safe-area-inset-bottom,0px))}
+.view{display:none}
+.view.active{display:grid;gap:14px;animation:rise .28s ease-out}
+@keyframes rise{from{transform:translateY(6px);opacity:.6}to{transform:none;opacity:1}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px;min-width:0}
+.card h2{margin:0;font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.lead{margin:0;color:var(--muted);max-width:62ch}
+.lbl{font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* buttons & controls */
+button{font:inherit}
+.btn{font-family:var(--f-display);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:14px;padding:11px 16px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer;min-height:44px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.btn.primary:hover{filter:brightness(1.08);color:var(--panel)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+.btnrow .grow{flex:1 1 180px}
+select,input[type=number],textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;min-height:44px}
+input[type=number]{font-family:var(--f-mono);font-size:15px;text-align:right;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=range]{width:100%;accent-color:var(--accent);min-height:32px}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--panel);color:var(--fg);padding:10px 8px;font-family:var(--f-display);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:13.5px;cursor:pointer;min-height:42px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--panel)}
+
+/* home */
+.hero{background:var(--hero);color:var(--hero-fg);border-radius:16px;padding:22px 18px;display:grid;gap:14px;position:relative;overflow:hidden}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.5;pointer-events:none}
+.hero > *{position:relative}
+.hero .brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:.02em}
+.hero .brand svg{width:40px;height:40px}
+.hero .brand b{color:#5fd4e1}
+.hero h2{margin:0;font-family:var(--f-display);font-weight:600;font-size:clamp(30px,8vw,42px);line-height:1.02;text-wrap:balance}
+.hero p{margin:0;opacity:.82;max-width:44ch}
+.status-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;cursor:pointer;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--fg);width:100%}
+.status-card:hover{border-color:var(--accent)}
+.status-card .lamp{width:44px;height:44px;border-radius:50%;background:var(--led-off);box-shadow:0 0 0 4px var(--bg)}
+.status-card.s-i .lamp,.status-card.s-u .lamp,.status-card.s-o .lamp{background:var(--s);box-shadow:0 0 18px var(--s)}
+.status-card .num{font-family:var(--f-mono);font-weight:600;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.status-card .sub{font-size:13px;color:var(--muted)}
+.status-card .go{color:var(--muted)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:620px){.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.tile{display:grid;gap:8px;align-content:start;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;color:var(--fg);min-height:118px;transition:transform .15s,border-color .15s}
+.tile:hover{border-color:var(--accent);transform:translateY(-2px)}
+.tile:active{transform:scale(.98)}
+.tile .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.tile .ic svg{width:22px;height:22px}
+.tile b{font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.02em;line-height:1.1}
+.tile span{font-size:12.5px;color:var(--muted);line-height:1.3}
+
+/* inputs */
+.field{display:grid;grid-template-columns:minmax(0,1fr) 7.2rem 6.4rem;gap:8px;align-items:center}
+.field label{display:grid;gap:0;font-size:14.5px}
+.field label em{font-style:normal;font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+@media (max-width:420px){.field{grid-template-columns:minmax(0,1fr) 6.2rem;}.field label{grid-column:1/-1}.field input{grid-column:1}.field select{grid-column:2}}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--muted)}
+.chk input{width:20px;height:20px;margin-top:1px;accent-color:var(--accent);flex:none}
+
+/* display */
+.gauge-wrap{display:grid;justify-items:center;gap:4px}
+.gauge{width:100%;max-width:380px;height:auto;display:block}
+.gauge .needle{transition:transform .5s cubic-bezier(.3,1.4,.5,1)}
+.bigread{font-family:var(--f-mono);font-weight:600;font-size:clamp(40px,11vw,56px);line-height:1;font-variant-numeric:tabular-nums;text-align:center}
+.bigread small{font-size:.42em;color:var(--muted);margin-left:3px}
+.statusTxt{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.1em;text-transform:uppercase;text-align:center;color:var(--muted)}
+.statusTxt.s-i,.statusTxt.s-u,.statusTxt.s-o{color:var(--s)}
+.leds{display:flex;justify-content:center;gap:14px}
+.led{display:grid;justify-items:center;gap:6px;font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);width:78px}
+.led i{width:32px;height:32px;border-radius:50%;background:var(--led-off);border:2px solid var(--line);transition:background .25s,box-shadow .25s}
 .led.on{color:var(--fg)}
-.gauge{position:relative;height:30px;border-radius:6px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
-.gauge .band{position:absolute;top:0;bottom:0;background:var(--band);border-left:1px dashed var(--ok);border-right:1px dashed var(--ok)}
-.gauge .needle{position:absolute;top:-2px;bottom:-2px;width:3px;background:var(--fg);transition:left .3s}
-.gauge-scale{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
-.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-@media (max-width:460px){.kv{grid-template-columns:minmax(0,1fr)}}
-.kv div{border-top:1px solid var(--line);padding-top:6px}
-.kv .v{font-family:var(--f-mono);font-size:17px;font-variant-numeric:tabular-nums}
+.led.u.on i{background:var(--warn);box-shadow:0 0 18px var(--warn)}
+.led.i.on i{background:var(--ok);box-shadow:0 0 18px var(--ok)}
+.led.o.on i{background:var(--bad);box-shadow:0 0 18px var(--bad)}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.kv > div{border-top:1px solid var(--line);padding-top:6px;min-width:0}
+.kv .k{font-size:12.5px;color:var(--muted)}
+.kv .v{font-family:var(--f-mono);font-size:17px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .kv .v small{color:var(--muted);font-size:12px}
-.kv .k{font-size:13px;color:var(--muted)}
-.flow ol{margin:0;padding:0;list-style:none;display:grid;gap:0;counter-reset:s}
-.flow li{counter-increment:s;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid var(--line)}
-.flow li::before{content:counter(s);font-family:var(--f-mono);font-size:12px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-weight:600}
-.flow .t{font-weight:600;font-size:14px}
-.flow code{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);display:block;overflow-wrap:anywhere}
-.flow code b{color:var(--fg);font-weight:600}
+.flowcv{width:100%;height:190px;display:block;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.whatif{display:grid;gap:8px}
+.whatif .out{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;font-size:14px}
+.pill{display:inline-block;font-family:var(--f-display);font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:99px;background:var(--bg);color:var(--muted)}
+.pill.s-i,.pill.s-u,.pill.s-o{background:var(--s-soft);color:var(--s)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* steps */
+.dots{display:flex;gap:6px;justify-content:center}
+.dots button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-family:var(--f-mono);font-size:12px;cursor:pointer;padding:0}
+.dots button.on{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.dots button.done{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.step{display:grid;gap:10px}
+.step .n{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.step h3{margin:0;font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.1}
+.step p{margin:0;color:var(--muted);max-width:60ch}
+.formula{font-family:var(--f-mono);font-size:15px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto;white-space:nowrap}
+.subst{font-family:var(--f-mono);font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.result{font-family:var(--f-mono);font-weight:600;font-size:24px;color:var(--fg)}
+.allsteps{display:grid;gap:12px}
+.allsteps .step{border-top:1px solid var(--line);padding-top:12px}
+
+/* tables & lists */
 .tbl{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
 th{font-family:var(--f-display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px;color:var(--muted)}
 td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-.pill{display:inline-block;font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
-.pill.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
-.pill.u{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
-.pill.o{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
-tr.sel td{background:var(--accent-soft)}
-.charts{display:grid;gap:12px}
-canvas{width:100%;height:220px;display:block;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
-.ts-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
-.seg button{border:0;border-radius:0}
-.seg button[aria-pressed=true]{background:var(--accent);color:var(--panel)}
-.stats{display:flex;flex-wrap:wrap;gap:18px;font-size:13px;color:var(--muted)}
-.stats b{font-family:var(--f-mono);color:var(--fg);font-weight:600}
-textarea{width:100%;min-height:90px;font-family:var(--f-mono);font-size:12px}
-.hist{display:grid;gap:8px}
-.note{font-size:13px;color:var(--muted);max-width:75ch}
+tr.best td{background:var(--ok-soft)}
+tr.cur td{font-weight:600}
+.linkbtn{border:1px solid var(--line);background:var(--panel);color:var(--accent);border-radius:7px;padding:5px 10px;font-family:var(--f-display);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:12px;cursor:pointer}
+.stdlist{display:grid;gap:10px}
+.stdopt{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
+.stdopt:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.stdopt input{width:20px;height:20px;accent-color:var(--accent);margin:0}
+.stdopt b{font-family:var(--f-display);font-weight:700;font-size:17px;display:block}
+.stdopt small{color:var(--muted);font-size:12.5px;display:block}
+.stdopt .rng{font-family:var(--f-mono);font-size:13px}
+.stdopt .right{display:grid;justify-items:end;gap:4px;text-align:right}
+.custom{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.custom input{width:6rem}
+
+/* trends */
+.chartcv{width:100%;height:210px;display:block;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
 .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
 .legend span::before{content:"";display:inline-block;width:14px;height:3px;margin-right:6px;vertical-align:middle;background:var(--c)}
-.custom{display:flex;gap:6px;align-items:center}
-.custom input{width:5rem}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:560px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.stats div{background:var(--bg);border-radius:8px;padding:8px 10px}
+.stats .k{font-size:12px;color:var(--muted)}
+.stats .v{font-family:var(--f-mono);font-weight:600;font-size:16px}
+textarea{width:100%;min-height:110px;font-family:var(--f-mono);font-size:12px}
+.note{font-size:13px;color:var(--muted);margin:0;max-width:70ch}
+code{font-family:var(--f-mono);font-size:12.5px}
+
+/* learn */
+.explain{display:grid;gap:6px}
+.explain h3{margin:0;font-family:var(--f-display);font-weight:700;font-size:22px}
+.explain p{margin:0;max-width:62ch}
+.bias{display:flex;gap:12px;flex-wrap:wrap}
+.bias div{flex:1 1 140px;background:var(--bg);border-radius:8px;padding:10px}
+.bias .v{font-family:var(--f-mono);font-weight:600;font-size:20px}
+.bias .k{font-size:12px;color:var(--muted)}
+
+/* tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar .inner{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.tab{display:grid;justify-items:center;gap:2px;padding:8px 2px 9px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--f-display);font-weight:600;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase}
+.tab svg{width:23px;height:23px}
+.tab.on{color:var(--accent)}
+.tab.on svg{transform:translateY(-1px)}
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:14px;z-index:8;transition:opacity .25s;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
 
 </head>
 <body>
-<div class="wrap">
-<header>
-  <div class="brand">
-    <div class="logo" aria-label="Airsens">
-      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="var(--accent)" stroke-width="3"/><path d="M8 22c4-6 8-6 12 0s8 6 12 0" fill="none" stroke="var(--fg)" stroke-width="3" stroke-linecap="round"/><path d="M10 15c3-3 6-3 9 0" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/></svg>
-      <span>Air<b>sens</b></span>
-    </div>
-    <h1>Isokinetic Flow Monitor</h1>
-  </div>
-  <div class="toolbar">
-    <label class="lbl" for="std">Standard</label>
-    <select id="std"></select>
-    <span class="custom" id="customBox" hidden>
-      <input type="number" id="cLo" value="90" step="1" aria-label="Custom lower limit %">–<input type="number" id="cHi" value="110" step="1" aria-label="Custom upper limit %">%
-    </span>
-    <button id="exSlide" title="Values from the proposal slide">Load slide example</button>
-    <button id="exReal">Load stack example</button>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-input" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></g></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3.5 17a9 9 0 1 1 17 0"/><path d="M12 15l4-6"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/></g></symbol>
+  <symbol id="i-steps" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 5.5l1 1 1.8-2M4 11.5l1 1 1.8-2M4 17.5l1 1 1.8-2"/></g></symbol>
+  <symbol id="i-nozzle" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h7l4 2v2l-4 2H3"/><path d="M14 12h7M17 9.5l3 2.5-3 2.5"/></g></symbol>
+  <symbol id="i-std" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13l2 2 4-4" stroke-linecap="round"/></g></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M4 16l4-5 4 3 4-7 4 4"/></g></symbol>
+  <symbol id="i-learn" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8c3-3 6-3 9 0s6 3 9 0M3 14c3-3 6-3 9 0s6 3 9 0"/><circle cx="7" cy="19" r="1" fill="currentColor"/><circle cx="15" cy="4" r="1" fill="currentColor"/></g></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></g></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="#3cc0cf" stroke-width="3"/><path d="M8 22c4-6 8-6 12 0s8 6 12 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M10 15c3-3 6-3 9 0" fill="none" stroke="#3cc0cf" stroke-width="2.5" stroke-linecap="round"/></symbol>
+</svg>
+
+<header class="appbar gut">
+  <div class="inner">
+    <button class="iconbtn" id="backBtn" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+    <h1 id="title"><span class="logo"><svg><use href="#i-logo"/></svg>Airsens Isokinetic</span></h1>
+    <button class="chip" id="chip" aria-label="Current isokinetic percentage, open display"><i></i><span id="chipTxt">—</span></button>
   </div>
 </header>
 
-<div class="grid">
-  <section class="panel" aria-labelledby="inH">
-    <h2 id="inH">Measurements <small>current / historical inputs</small></h2>
-    <fieldset>
-      <legend class="lbl">Geometry</legend>
-      <div class="row"><span class="name">Stack diameter</span><span class="sym">D<sub>s</sub></span><input type="number" id="ds" step="any"><select id="dsU" data-k="len"></select></div>
-      <div class="row"><span class="name">Sampling nozzle inlet diameter</span><span class="sym">d<sub>n</sub></span><input type="number" id="dn" step="any"><select id="dnU" data-k="len"></select></div>
-    </fieldset>
-    <fieldset>
-      <legend class="lbl">Flow rates</legend>
-      <div class="row"><span class="name">Stack flow rate (actual)</span><span class="sym">Q<sub>s</sub></span><input type="number" id="qs" step="any"><select id="qsU" data-k="flow"></select></div>
-      <div class="row"><span class="name">Sampling probe flow rate</span><span class="sym">Q<sub>f</sub></span><input type="number" id="qf" step="any"><select id="qfU" data-k="flow"></select></div>
-    </fieldset>
-    <fieldset>
-      <legend class="lbl">Stack conditions</legend>
-      <div class="row"><span class="name">Stack gas temperature</span><span class="sym">T<sub>s</sub></span><input type="number" id="ts" step="any"><select id="tsU" data-k="temp"></select></div>
-      <div class="row"><span class="name">Stack absolute pressure</span><span class="sym">P<sub>s</sub></span><input type="number" id="ps" step="any"><select id="psU" data-k="pres"></select></div>
-    </fieldset>
-    <fieldset>
-      <legend class="lbl">Probe / flow-meter conditions</legend>
-      <div class="row"><span class="name">Probe gas temperature at meter</span><span class="sym">T<sub>m</sub></span><input type="number" id="tm" step="any"><select id="tmU" data-k="temp"></select></div>
-      <div class="row"><span class="name">Probe absolute pressure at meter</span><span class="sym">P<sub>m</sub></span><input type="number" id="pm" step="any"><select id="pmU" data-k="pres"></select></div>
-      <label class="chk"><input type="checkbox" id="corr" checked> Correct probe flow from meter conditions to stack conditions (ideal gas: Q<sub>f,s</sub> = Q<sub>f</sub> · T<sub>s</sub>/T<sub>m</sub> · P<sub>m</sub>/P<sub>s</sub>). Moisture is not corrected.</label>
-    </fieldset>
-  </section>
+<main class="gut">
+<div class="inner">
 
-  <div style="display:grid;gap:16px;min-width:0">
-    <section class="panel" aria-labelledby="outH">
-      <h2 id="outH">Isokinetic status <small id="stdName"></small></h2>
-      <div class="readout">
-        <div>
-          <div class="big" id="iso">—<small>%</small></div>
-          <div class="status" id="statusTxt">—</div>
-        </div>
-        <div class="leds" role="status" aria-live="polite">
-          <div class="led u" id="ledU"><i></i>Under</div>
-          <div class="led i" id="ledI"><i></i>Iso</div>
-          <div class="led o" id="ledO"><i></i>Over</div>
-        </div>
-      </div>
-      <div>
-        <div class="gauge" aria-hidden="true"><div class="band" id="gBand"></div><div class="needle" id="gNeedle"></div></div>
-        <div class="gauge-scale"><span>50%</span><span>75%</span><span>100%</span><span>125%</span><span>150%</span></div>
-      </div>
-      <div class="kv">
-        <div><div class="k">Stack fluid velocity V<sub>e</sub></div><div class="v" id="ve">—</div></div>
-        <div><div class="k">Nozzle (probe) velocity V<sub>f</sub></div><div class="v" id="vf">—</div></div>
-        <div><div class="k">Required nozzle diameter for 100%</div><div class="v" id="dReq">—</div></div>
-        <div><div class="k">Required probe flow for 100% (at meter)</div><div class="v" id="qReq">—</div></div>
-        <div><div class="k">Acceptable probe flow window (at meter)</div><div class="v" id="qWin">—</div></div>
-        <div><div class="k">Velocity deviation V<sub>f</sub> − V<sub>e</sub></div><div class="v" id="dv">—</div></div>
-      </div>
-    </section>
-
-    <section class="panel flow" aria-labelledby="flH">
-      <h2 id="flH">Calculation flow</h2>
-      <ol id="steps"></ol>
-    </section>
+<!-- HOME -->
+<section class="view" id="v-home" aria-label="Welcome">
+  <div class="hero">
+    <canvas id="heroCv" aria-hidden="true"></canvas>
+    <div class="brand"><svg><use href="#i-logo"/></svg><span>Air<b>sens</b></span></div>
+    <h2>Isokinetic Flow Monitor</h2>
+    <p>Check that your stack sampling nozzle draws gas at the same velocity as the stack flow, so particle samples stay representative.</p>
   </div>
-</div>
-
-<section class="panel" aria-labelledby="stH">
-  <h2 id="stH">Standards comparison <small>same measurement judged against each acceptance range</small></h2>
-  <div class="tbl"><table>
-    <thead><tr><th>Standard</th><th>Scope</th><th>Acceptance range</th><th>Margin</th><th>Result</th></tr></thead>
-    <tbody id="stdRows"></tbody>
-  </table></div>
-  <p class="note">Ranges are the commonly cited isokinetic acceptance limits. Confirm against the current edition of each standard before using a result for compliance reporting.</p>
+  <button class="status-card" id="homeStatus" data-go="display">
+    <span class="lamp"></span>
+    <span><span class="num" id="homeI">—</span><br><span class="sub" id="homeSub">—</span></span>
+    <svg class="go" width="22" height="22"><use href="#i-chev"/></svg>
+  </button>
+  <div class="tiles">
+    <button class="tile" data-go="inputs"><span class="ic"><svg><use href="#i-input"/></svg></span><b>Measurements</b><span>Stack and probe flow, size, temperature, pressure</span></button>
+    <button class="tile" data-go="display"><span class="ic"><svg><use href="#i-gauge"/></svg></span><b>Isokinetic display</b><span>Dial, lamp and live flow view</span></button>
+    <button class="tile" data-go="steps"><span class="ic"><svg><use href="#i-steps"/></svg></span><b>Calculation</b><span>Step-by-step working with your numbers</span></button>
+    <button class="tile" data-go="nozzle"><span class="ic"><svg><use href="#i-nozzle"/></svg></span><b>Nozzle sizing</b><span>Pick the nozzle that hits 100%</span></button>
+    <button class="tile" data-go="standards"><span class="ic"><svg><use href="#i-std"/></svg></span><b>Standards</b><span>EPA, ISO and EN acceptance ranges</span></button>
+    <button class="tile" data-go="trends"><span class="ic"><svg><use href="#i-trend"/></svg></span><b>Trends</b><span>Real-time and historical charts</span></button>
+    <button class="tile" data-go="learn"><span class="ic"><svg><use href="#i-learn"/></svg></span><b>Learn</b><span>Iso, over and underkinetic explained</span></button>
+    <button class="tile" data-go="about"><span class="ic"><svg><use href="#i-info"/></svg></span><b>About</b><span>Method, assumptions, reset</span></button>
+  </div>
 </section>
 
-<section class="panel" aria-labelledby="tsH">
-  <h2 id="tsH">Time series</h2>
-  <div class="ts-bar">
-    <div class="seg" role="group" aria-label="Data source">
-      <button id="mLive" aria-pressed="true">Real-time (simulated)</button>
-      <button id="mHist" aria-pressed="false">Historical (CSV)</button>
+<!-- INPUTS -->
+<section class="view" id="v-inputs" aria-label="Measurements">
+  <p class="lead">Enter current or historical readings. Results update everywhere as you type and are kept on this device.</p>
+  <div class="btnrow">
+    <button class="btn grow" id="exReal">Load stack example</button>
+    <button class="btn grow" id="exSlide">Load slide example</button>
+  </div>
+  <div id="inputsBody" style="display:grid;gap:14px"></div>
+  <button class="btn primary" data-go="display">See isokinetic result</button>
+</section>
+
+<!-- DISPLAY -->
+<section class="view" id="v-display" aria-label="Isokinetic display">
+  <div class="card">
+    <div class="gauge-wrap">
+      <svg class="gauge" id="gauge" viewBox="-14 0 328 172" role="img" aria-label="Isokinetic dial">
+        <g id="gArcs"></g>
+        <g id="gTicks"></g>
+        <g class="needle" id="gNeedle" style="transform-origin:150px 150px">
+          <line x1="150" y1="150" x2="38" y2="150" stroke="var(--fg)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <circle cx="150" cy="150" r="9" fill="var(--fg)"/>
+        <circle cx="150" cy="150" r="4" fill="var(--panel)"/>
+      </svg>
+      <div class="bigread" id="dI">—<small>%</small></div>
+      <div class="statusTxt" id="dStatus">—</div>
     </div>
-    <div class="toolbar">
-      <button id="pause">Pause</button>
-      <button id="copyCsv">Copy log as CSV</button>
+    <div class="leds" role="status" aria-live="polite">
+      <div class="led u" id="ledU"><i></i>Under</div>
+      <div class="led i" id="ledI"><i></i>Iso</div>
+      <div class="led o" id="ledO"><i></i>Over</div>
+    </div>
+    <div class="note" id="dStd" style="text-align:center"></div>
+  </div>
+  <div class="card">
+    <h2>Velocities</h2>
+    <div class="kv">
+      <div><div class="k">Stack velocity V<sub>e</sub></div><div class="v" id="ve">—</div></div>
+      <div><div class="k">Nozzle velocity V<sub>f</sub></div><div class="v" id="vf">—</div></div>
+      <div><div class="k">Difference V<sub>f</sub> − V<sub>e</sub></div><div class="v" id="dv">—</div></div>
+      <div><div class="k">Large-particle bias</div><div class="v" id="bias">—</div></div>
     </div>
   </div>
-  <div class="hist" id="histBox" hidden>
-    <p class="note">Columns: <code>time, stack_flow, probe_flow</code> and optionally <code>stack_T, stack_P, meter_T, meter_P</code>. Values use the units selected above. Geometry comes from the inputs.</p>
-    <textarea id="csv" spellcheck="false" aria-label="Historical CSV data"></textarea>
-    <div class="toolbar"><input type="file" id="file" accept=".csv,text/csv" aria-label="Upload CSV file"><button class="primary" id="plot">Plot data</button><button id="sample">Load sample history</button><span class="note" id="csvMsg"></span></div>
+  <div class="card">
+    <h2>Flow at the nozzle</h2>
+    <canvas class="flowcv" id="flowD" aria-label="Animated gas streamlines and particles entering the nozzle"></canvas>
+    <p class="note">Lines are gas streamlines; dark dots are large particles that keep going straight. Watch how the gas captured by the nozzle widens or narrows with your result.</p>
+  </div>
+  <div class="card whatif">
+    <h2>What if I change the probe flow?</h2>
+    <label class="lbl" for="adj">Probe flow <span id="adjPct">100%</span> of current</label>
+    <input type="range" id="adj" min="40" max="180" step="1" value="100">
+    <div class="out"><span>Probe flow <b class="mono" id="adjQ">—</b> → I = <b class="mono" id="adjI">—</b></span><span class="pill" id="adjPill">—</span></div>
+    <div class="btnrow"><button class="btn" id="adjFit">Set to 100%</button><button class="btn primary grow" id="adjApply">Apply to measurements</button></div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section class="view" id="v-steps" aria-label="Calculation steps">
+  <div class="seg" role="group" aria-label="Step view">
+    <button id="stOne" aria-pressed="true">One at a time</button>
+    <button id="stAll" aria-pressed="false">All steps</button>
+  </div>
+  <div class="card" id="stepOneBox">
+    <div class="dots" id="stepDots"></div>
+    <div class="step" id="stepCur"></div>
+    <div class="btnrow"><button class="btn grow" id="stPrev">Previous</button><button class="btn primary grow" id="stNext">Next step</button></div>
+  </div>
+  <div class="card allsteps" id="stepAllBox" hidden></div>
+</section>
+
+<!-- NOZZLE -->
+<section class="view" id="v-nozzle" aria-label="Nozzle sizing">
+  <div class="card">
+    <h2>For the current probe flow</h2>
+    <div class="kv">
+      <div><div class="k">Ideal nozzle diameter</div><div class="v" id="dReq">—</div></div>
+      <div><div class="k">Current nozzle</div><div class="v" id="dCur">—</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>For the current nozzle</h2>
+    <div class="kv">
+      <div><div class="k">Probe flow for 100%</div><div class="v" id="qReq">—</div></div>
+      <div><div class="k">Acceptable probe flow window</div><div class="v" id="qWin">—</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Standard nozzle sizes</h2>
+    <p class="note">Isokinetic result each nozzle gives at the current probe flow. Green is the best fit inside the selected range. Tap Use to fit it.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Nozzle</th><th>Result</th><th>Status</th><th>Flow for 100%</th><th></th></tr></thead>
+      <tbody id="nzRows"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- STANDARDS -->
+<section class="view" id="v-standards" aria-label="Standards">
+  <p class="lead">Choose the standard you are reporting against. The lamp, dial and charts use its range. Every standard is checked against your current result.</p>
+  <div class="stdlist" id="stdList"></div>
+  <div class="custom" id="customBox" hidden>
+    <span class="lbl">Custom range</span>
+    <input type="number" id="cLo" value="90" step="1" aria-label="Custom lower limit percent"> –
+    <input type="number" id="cHi" value="110" step="1" aria-label="Custom upper limit percent"> %
+  </div>
+  <p class="note">Ranges are the commonly cited isokinetic acceptance limits. Confirm against the current edition of each standard before reporting.</p>
+</section>
+
+<!-- TRENDS -->
+<section class="view" id="v-trends" aria-label="Trends">
+  <div class="seg" role="group" aria-label="Data source">
+    <button id="mLive" aria-pressed="true">Real-time</button>
+    <button id="mHist" aria-pressed="false">Historical CSV</button>
   </div>
   <div class="stats" id="stats"></div>
-  <div class="charts">
-    <div><div class="legend"><span style="--c:var(--accent)">Isokinetic %</span><span style="--c:var(--ok)">Acceptance band</span></div><canvas id="cIso" aria-label="Isokinetic percentage over time"></canvas></div>
-    <div><div class="legend"><span style="--c:var(--fg)">Stack velocity V<sub>e</sub></span><span style="--c:var(--accent)">Nozzle velocity V<sub>f</sub></span></div><canvas id="cVel" aria-label="Stack and nozzle velocities over time"></canvas></div>
+  <div class="card">
+    <h2>Isokinetic %</h2>
+    <div class="legend"><span style="--c:var(--accent)">Isokinetic %</span><span style="--c:var(--ok)">Acceptance band</span></div>
+    <canvas class="chartcv" id="cIso"></canvas>
   </div>
-  <p class="note">Real-time mode simulates sensor readings drifting around the inputs above, one sample per second, so the display can be tested before the Airsens flow sensors are connected.</p>
+  <div class="card">
+    <h2>Velocities</h2>
+    <div class="legend"><span style="--c:var(--fg)">Stack V<sub>e</sub></span><span style="--c:var(--accent)">Nozzle V<sub>f</sub></span></div>
+    <canvas class="chartcv" id="cVel"></canvas>
+  </div>
+  <div class="btnrow" id="liveCtl"><button class="btn grow" id="pause">Pause</button><button class="btn grow" id="copyCsv">Copy log as CSV</button></div>
+  <div class="card" id="histBox" hidden>
+    <h2>Historical data</h2>
+    <p class="note">Columns: <code>time, stack_flow, probe_flow</code>, optionally <code>stack_T, stack_P, meter_T, meter_P</code>, in the units set on Measurements.</p>
+    <textarea id="csv" spellcheck="false" aria-label="Historical CSV data"></textarea>
+    <input type="file" id="file" accept=".csv,text/csv,text/plain" aria-label="Upload CSV file">
+    <div class="btnrow"><button class="btn primary grow" id="plot">Plot data</button><button class="btn grow" id="sample">Sample history</button></div>
+    <p class="note" id="csvMsg"></p>
+  </div>
+  <p class="note" id="liveNote">Real-time mode simulates readings drifting around your inputs, one per second, until the Airsens flow sensors are connected.</p>
 </section>
+
+<!-- LEARN -->
+<section class="view" id="v-learn" aria-label="Learn">
+  <div class="seg" role="group" aria-label="Sampling condition">
+    <button data-l="100" aria-pressed="true">Isokinetic</button>
+    <button data-l="160" aria-pressed="false">Overkinetic</button>
+    <button data-l="55" aria-pressed="false">Underkinetic</button>
+  </div>
+  <div class="card">
+    <canvas class="flowcv" id="flowL" style="height:220px" aria-label="Animated sampling condition"></canvas>
+    <label class="lbl" for="lSlider">Nozzle velocity V<sub>2</sub> = <span id="lPct">100%</span> of stack velocity V<sub>1</sub></label>
+    <input type="range" id="lSlider" min="40" max="180" value="100">
+  </div>
+  <div class="card explain" id="lText"></div>
+  <div class="card">
+    <h2>Expected bias for large particles</h2>
+    <div class="bias">
+      <div><div class="k">Measured ÷ true concentration</div><div class="v" id="lBias">1.00</div></div>
+      <div><div class="k">Error</div><div class="v" id="lErr">0%</div></div>
+    </div>
+    <p class="note">For particles too heavy to follow the gas, the sampled concentration scales with V<sub>1</sub>/V<sub>2</sub>. Small particles follow the gas and show little bias.</p>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="view" id="v-about" aria-label="About">
+  <div class="card">
+    <h2>Airsens Isokinetic Monitor</h2>
+    <p class="note">Version 1.1. Calculates the isokinetic flow velocity percentage, the ratio of sampling nozzle velocity to stack fluid velocity, and judges it against stack-sampling standards.</p>
+  </div>
+  <div class="card">
+    <h2>Method</h2>
+    <p class="note">V<sub>e</sub> = Q<sub>s</sub> ÷ (π D<sub>s</sub>²/4). The probe flow is corrected from meter to stack conditions with the ideal gas law, then V<sub>f</sub> = Q<sub>f,s</sub> ÷ (π d<sub>n</sub>²/4). I = V<sub>f</sub>/V<sub>e</sub> × 100. EPA Method 5 accepts 90–110%.</p>
+  </div>
+  <div class="card">
+    <h2>Assumptions</h2>
+    <p class="note">Stack flow is entered at actual stack conditions. Moisture, gas molecular weight and pitot readings are not used. Real-time mode is simulated until sensors are connected.</p>
+  </div>
+  <div class="card">
+    <h2>Reset</h2>
+    <div class="btnrow"><button class="btn danger" id="resetBtn">Reset all inputs</button><button class="btn" id="resetNo" hidden>Cancel</button></div>
+  </div>
+</section>
+
 </div>
+</main>
+
+<nav class="tabbar gut" aria-label="Main">
+  <div class="inner">
+    <button class="tab" data-go="home"><svg><use href="#i-home"/></svg>Home</button>
+    <button class="tab" data-go="inputs"><svg><use href="#i-input"/></svg>Inputs</button>
+    <button class="tab" data-go="display"><svg><use href="#i-gauge"/></svg>Display</button>
+    <button class="tab" data-go="trends"><svg><use href="#i-trend"/></svg>Trends</button>
+    <button class="tab" data-go="learn"><svg><use href="#i-learn"/></svg>Learn</button>
+  </div>
+</nav>
+<div class="toast" id="toast" style="opacity:0" aria-live="polite"></div>
 
 <script>
+const $=id=>document.getElementById(id);
 const U={
  len:{mm:.001,cm:.01,m:1,in:.0254},
  flow:{"m³/s":1,"m³/min":1/60,"m³/h":1/3600,"m³/d":1/86400,"L/min":1/60000,"ACFM":0.000471947},
- temp:{"°C":null,"K":null,"°F":null},
+ temp:{"°C":0,"K":0,"°F":0},
  pres:{kPa:1,Pa:.001,mbar:.1,atm:101.325,inHg:3.38639}
 };
 const STD=[
@@ -243,26 +469,30 @@ const STD=[
  {id:"m17",n:"US EPA Method 17",s:"In-stack particulate filtration",lo:90,hi:110},
  {id:"iso9096",n:"ISO 9096:2017",s:"Particulate, high concentration",lo:95,hi:115},
  {id:"en13284",n:"EN 13284-1:2017",s:"Dust, low concentration",lo:95,hi:115},
- {id:"custom",n:"Custom range",s:"User defined",lo:90,hi:110}
+ {id:"custom",n:"Custom range",s:"Your own limits",lo:90,hi:110}
 ];
-const $=id=>document.getElementById(id);
-const fields={ds:"len",dn:"len",qs:"flow",qf:"flow",ts:"temp",ps:"pres",tm:"temp",pm:"pres"};
-for(const [f,k] of Object.entries(fields)){const s=$(f+"U");for(const u of Object.keys(U[k]))s.add(new Option(u,u));}
-for(const s of STD)$("std").add(new Option(s.n,s.id));
-
-const toM=(v,u)=>v*U.len[u], toQ=(v,u)=>v*U.flow[u], fromQ=(v,u)=>v/U.flow[u], toP=(v,u)=>v*U.pres[u];
-const toK=(v,u)=>u==="K"?v:u==="°F"?(v-32)*5/9+273.15:v+273.15;
-const fmt=(x,d=2)=>!isFinite(x)?"—":Math.abs(x)>=1e4||(Math.abs(x)<1e-3&&x!==0)?x.toExponential(2):x.toFixed(d);
-const sig=x=>{if(!isFinite(x))return"—";const a=Math.abs(x);return x.toFixed(a>=100?1:a>=10?2:a>=1?3:4)};
-
-function setVals(o){for(const [k,v] of Object.entries(o)){const e=$(k);if(e.type==="checkbox")e.checked=v;else e.value=v;}}
+const GROUPS=[
+ {t:"Geometry",f:[["ds","len","Stack diameter","Dₛ"],["dn","len","Sampling nozzle inlet diameter","dₙ"]]},
+ {t:"Flow rates",f:[["qs","flow","Stack flow rate (actual)","Qₛ"],["qf","flow","Sampling probe flow rate","Q_f"]]},
+ {t:"Stack conditions",f:[["ts","temp","Stack gas temperature","Tₛ"],["ps","pres","Stack absolute pressure","Pₛ"]]},
+ {t:"Probe / flow-meter conditions",f:[["tm","temp","Gas temperature at meter","Tₘ"],["pm","pres","Absolute pressure at meter","Pₘ"]]}
+];
 const EX_SLIDE={ds:10.16,dsU:"cm",dn:22,dnU:"cm",qs:2011,qsU:"m³/d",qf:264,qfU:"m³/d",ts:25,tsU:"°C",ps:101.325,psU:"kPa",tm:25,tmU:"°C",pm:101.325,pmU:"kPa"};
 const EX_REAL={ds:600,dsU:"mm",dn:8,dnU:"mm",qs:12000,qsU:"m³/h",qf:25,qfU:"L/min",ts:140,tsU:"°C",ps:99.8,psU:"kPa",tm:20,tmU:"°C",pm:98.5,pmU:"kPa"};
-
-function std(){const s=STD.find(x=>x.id===$("std").value);if(s.id==="custom"){s.lo=+$("cLo").value;s.hi=+$("cHi").value;}return s;}
-function classify(I,s){return !isFinite(I)?null:I<s.lo?"u":I>s.hi?"o":"i";}
 const LABEL={u:"Underkinetic",i:"Isokinetic",o:"Overkinetic"};
+let stdId="m5";
 
+/* ---- build input form ---- */
+$("inputsBody").innerHTML=GROUPS.map(g=>`<div class="card"><h2>${g.t}</h2>${g.f.map(([id,k,name,sym])=>
+ `<div class="field"><label for="${id}">${name}<em>${sym}</em></label><input type="number" inputmode="decimal" step="any" id="${id}"><select id="${id}U" aria-label="${name} unit">${Object.keys(U[k]).map(u=>`<option>${u}</option>`).join("")}</select></div>`).join("")}${g.t.startsWith("Probe")?`<label class="chk"><input type="checkbox" id="corr" checked><span>Correct probe flow from meter to stack conditions (ideal gas: Q<sub>f,s</sub> = Q<sub>f</sub> · T<sub>s</sub>/T<sub>m</sub> · P<sub>m</sub>/P<sub>s</sub>). Moisture is not corrected.</span></label>`:""}</div>`).join("");
+
+/* ---- maths ---- */
+const toM=(v,u)=>v*U.len[u], toQ=(v,u)=>v*U.flow[u], fromQ=(v,u)=>v/U.flow[u], toP=(v,u)=>v*U.pres[u];
+const toK=(v,u)=>u==="K"?v:u==="°F"?(v-32)*5/9+273.15:v+273.15;
+const sig=x=>{if(!isFinite(x))return"—";const a=Math.abs(x);return x.toFixed(a>=1000?0:a>=100?1:a>=10?2:a>=1?3:4)};
+const fmt=(x,d=4)=>!isFinite(x)?"—":(Math.abs(x)<1e-3&&x!==0)||Math.abs(x)>=1e5?x.toExponential(3):(+x.toPrecision(d)).toString();
+function std(){const s=STD.find(x=>x.id===stdId)||STD[0];if(s.id==="custom"){s.lo=+$("cLo").value||0;s.hi=+$("cHi").value||0;}return s;}
+const classify=(I,s)=>!isFinite(I)?null:I<s.lo?"u":I>s.hi?"o":"i";
 function read(){
  const g=id=>parseFloat($(id).value), u=id=>$(id+"U").value;
  return {Ds:toM(g("ds"),u("ds")),dn:toM(g("dn"),u("dn")),Qs:toQ(g("qs"),u("qs")),Qf:toQ(g("qf"),u("qf")),
@@ -272,131 +502,291 @@ function calc(x){
  const As=Math.PI*x.Ds**2/4, An=Math.PI*x.dn**2/4;
  const k=x.corr?(x.Ts/x.Tm)*(x.Pm/x.Ps):1;
  const QfS=x.Qf*k, Ve=x.Qs/As, Vf=QfS/An, I=Vf/Ve*100;
- const QfReqS=Ve*An, QfReq=QfReqS/k, dReq=Math.sqrt(4*(QfS/Ve)/Math.PI);
- return {As,An,k,QfS,Ve,Vf,I,QfReq,dReq};
+ return {As,An,k,QfS,Ve,Vf,I,QfReq:Ve*An/k,dReq:Math.sqrt(4*(QfS/Ve)/Math.PI)};
 }
 
+/* ---- persistence ---- */
+const KEY="airsens-iso-v1";
+function save(){try{const o={stdId,cLo:$("cLo").value,cHi:$("cHi").value,corr:$("corr").checked};
+ for(const g of GROUPS)for(const [id] of g.f){o[id]=$(id).value;o[id+"U"]=$(id+"U").value;}localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+function setVals(o){for(const [k,v] of Object.entries(o)){const e=$(k);if(!e)continue;if(e.type==="checkbox")e.checked=v;else e.value=v;}}
+function load(){try{const o=JSON.parse(localStorage.getItem(KEY)||"null");if(o){setVals(o);if(o.stdId)stdId=o.stdId;return true;}}catch(e){}return false;}
+
+/* ---- gauge ---- */
+const GC={x:150,y:150,r:118};
+const ang=v=>Math.PI*(1-(Math.max(50,Math.min(150,v))-50)/100);
+const pt=(v,r=GC.r)=>[GC.x+r*Math.cos(ang(v)),GC.y-r*Math.sin(ang(v))];
+function arc(a,b,col){if(b<=a)return"";const [x1,y1]=pt(a),[x2,y2]=pt(b);return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${GC.r} ${GC.r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${col}" stroke-width="18" fill="none"/>`;}
+function drawGauge(s){
+ const lo=Math.max(50,Math.min(150,s.lo)),hi=Math.max(50,Math.min(150,s.hi));
+ $("gArcs").innerHTML=arc(50,lo,"var(--warn)")+arc(lo,hi,"var(--ok)")+arc(hi,150,"var(--bad)");
+ let t="";for(const v of [50,75,100,125,150]){const [a,b]=pt(v,GC.r-12),[c,d]=pt(v,GC.r+12),[lx,ly]=pt(v,GC.r+24);
+  t+=`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="var(--panel)" stroke-width="2"/><text x="${lx}" y="${ly+4}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">${v}</text>`;}
+ for(const v of [lo,hi]){const [lx,ly]=pt(v,GC.r-30);t+=`<text x="${lx}" y="${ly+4}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="var(--ok)">${v}</text>`;}
+ $("gTicks").innerHTML=t;
+}
+
+/* ---- render everything ---- */
+let R={}, X={};
+const sc=c=>c?"s-"+c:"";
+function setState(el,c){el.classList.remove("s-i","s-u","s-o");if(c)el.classList.add("s-"+c);}
 function render(){
  const s=std(); $("customBox").hidden=s.id!=="custom";
- const x=read(), r=calc(x), c=classify(r.I,s);
- $("stdName").textContent=`${s.n} · ${s.lo}–${s.hi}%`;
- $("iso").innerHTML=`${isFinite(r.I)?r.I.toFixed(1):"—"}<small>%</small>`;
- const st=$("statusTxt"); st.textContent=c?LABEL[c]:"Check inputs";
- st.style.color=c==="i"?"var(--ok)":c==="u"?"var(--warn)":c==="o"?"var(--bad)":"var(--muted)";
+ X=read(); R=calc(X); const c=classify(R.I,s), Itxt=isFinite(R.I)?R.I.toFixed(1):"—";
+ // chip + home
+ setState($("chip"),c); $("chipTxt").textContent=Itxt+"%";
+ setState($("homeStatus"),c); $("homeI").textContent=Itxt+"%";
+ $("homeSub").textContent=(c?LABEL[c]:"Check inputs")+" · "+s.n+" "+s.lo+"–"+s.hi+"%";
+ // display
+ drawGauge(s);
+ $("gNeedle").style.transform=`rotate(${((Math.max(45,Math.min(155,isFinite(R.I)?R.I:50))-50)/100*180).toFixed(2)}deg)`;
+ $("dI").innerHTML=`${Itxt}<small>%</small>`;
+ const st=$("dStatus"); st.textContent=c?LABEL[c]:"Check inputs"; setState(st,c);
  for(const [id,k] of [["ledU","u"],["ledI","i"],["ledO","o"]])$(id).classList.toggle("on",c===k);
- const pos=v=>Math.max(0,Math.min(100,(v-50)));
- $("gBand").style.left=pos(s.lo)+"%"; $("gBand").style.width=(pos(s.hi)-pos(s.lo))+"%";
- $("gNeedle").style.left=`calc(${pos(r.I)}% - 1.5px)`;
- const qu=$("qfU").value, lu=$("dnU").value;
- $("ve").innerHTML=`${sig(r.Ve)} <small>m/s</small>`;
- $("vf").innerHTML=`${sig(r.Vf)} <small>m/s</small>`;
- $("dReq").innerHTML=`${sig(r.dReq/U.len[lu])} <small>${lu}</small>`;
- $("qReq").innerHTML=`${sig(fromQ(r.QfReq,qu))} <small>${qu}</small>`;
- $("qWin").innerHTML=`${sig(fromQ(r.QfReq*s.lo/100,qu))} – ${sig(fromQ(r.QfReq*s.hi/100,qu))} <small>${qu}</small>`;
- $("dv").innerHTML=`${isFinite(r.Vf)?(r.Vf-r.Ve>=0?"+":"")+sig(r.Vf-r.Ve):"—"} <small>m/s</small>`;
- const steps=[
-  ["Cross-sectional areas",`A<sub>s</sub> = π·D<sub>s</sub>²/4 = <b>${fmt(r.As,5)} m²</b> · A<sub>n</sub> = π·d<sub>n</sub>²/4 = <b>${fmt(r.An,7)} m²</b>`],
-  ["Stack fluid velocity",`V<sub>e</sub> = Q<sub>s</sub>/A<sub>s</sub> = ${fmt(x.Qs,5)} / ${fmt(r.As,5)} = <b>${sig(r.Ve)} m/s</b>`],
-  ["Probe flow at stack conditions",x.corr?`Q<sub>f,s</sub> = Q<sub>f</sub>·(T<sub>s</sub>/T<sub>m</sub>)·(P<sub>m</sub>/P<sub>s</sub>) = ${fmt(x.Qf,6)} × ${r.k.toFixed(4)} = <b>${fmt(r.QfS,6)} m³/s</b>`:`Correction off: Q<sub>f,s</sub> = Q<sub>f</sub> = <b>${fmt(r.QfS,6)} m³/s</b>`],
-  ["Nozzle (probe) velocity",`V<sub>f</sub> = Q<sub>f,s</sub>/A<sub>n</sub> = <b>${sig(r.Vf)} m/s</b>`],
-  ["Isokinetic percentage",`I = V<sub>f</sub>/V<sub>e</sub> × 100 = <b>${isFinite(r.I)?r.I.toFixed(2):"—"} %</b>`],
-  ["Classify against "+s.n,`${s.lo}% ≤ I ≤ ${s.hi}% → <b>${c?LABEL[c]:"—"}</b> (I &lt; ${s.lo}% underkinetic, I &gt; ${s.hi}% overkinetic)`],
-  ["Nozzle sizing",`d<sub>n,req</sub> = √(4·Q<sub>f,s</sub>/(π·V<sub>e</sub>)) = <b>${sig(r.dReq*1000)} mm</b> for the current probe flow`]
- ];
- $("steps").innerHTML=steps.map(([t,f])=>`<li><div><div class="t">${t}</div><code>${f}</code></div></li>`).join("");
- $("stdRows").innerHTML=STD.filter(z=>z.id!=="custom"||s.id==="custom").map(z=>{
-  const k=classify(r.I,z), m=!isFinite(r.I)?"—":k==="i"?`${Math.min(r.I-z.lo,z.hi-r.I).toFixed(1)} pts inside`:k==="u"?`${(z.lo-r.I).toFixed(1)} pts below`:`${(r.I-z.hi).toFixed(1)} pts above`;
-  return `<tr class="${z.id===s.id?"sel":""}"><td>${z.n}</td><td>${z.s}</td><td class="num">${z.lo}–${z.hi}%</td><td class="num">${m}</td><td>${k?`<span class="pill ${k==="i"?"ok":k}">${LABEL[k]}</span>`:"—"}</td></tr>`;
- }).join("");
- drawAll();
+ $("dStd").textContent=`${s.n}: ${s.lo}–${s.hi}% is isokinetic`;
+ $("ve").innerHTML=`${sig(R.Ve)} <small>m/s</small>`; $("vf").innerHTML=`${sig(R.Vf)} <small>m/s</small>`;
+ $("dv").innerHTML=`${isFinite(R.Vf)?(R.Vf>=R.Ve?"+":"")+sig(R.Vf-R.Ve):"—"} <small>m/s</small>`;
+ $("bias").innerHTML=isFinite(R.I)&&R.I>0?`×${(100/R.I).toFixed(2)} <small>${R.I>100?"under-reads":R.I<100?"over-reads":"none"}</small>`:"—";
+ updateAdj();
+ // nozzle
+ const lu=$("dnU").value, qu=$("qfU").value;
+ $("dReq").innerHTML=`${sig(R.dReq/U.len[lu])} <small>${lu}</small>`;
+ $("dCur").innerHTML=`${$("dn").value||"—"} <small>${lu}</small>`;
+ $("qReq").innerHTML=`${sig(fromQ(R.QfReq,qu))} <small>${qu}</small>`;
+ $("qWin").innerHTML=`${sig(fromQ(R.QfReq*s.lo/100,qu))} – ${sig(fromQ(R.QfReq*s.hi/100,qu))} <small>${qu}</small>`;
+ const sizes=[3,4,5,6,7,8,9,10,11,12,14,16].map(mm=>{const An=Math.PI*(mm/1000)**2/4,I=R.QfS/An/R.Ve*100;return{mm,I,c:classify(I,s),q:fromQ(R.Ve*An/R.k,qu)}});
+ const inb=sizes.filter(z=>z.c==="i"); const best=inb.length?inb.reduce((a,b)=>Math.abs(a.I-100)<Math.abs(b.I-100)?a:b):null;
+ const curmm=X.dn*1000;
+ $("nzRows").innerHTML=sizes.map(z=>`<tr class="${z===best?"best":""} ${Math.abs(z.mm-curmm)<1e-6?"cur":""}"><td class="num">${z.mm} mm</td><td class="num">${isFinite(z.I)?z.I.toFixed(1)+"%":"—"}</td><td>${z.c?`<span class="pill s-${z.c}">${LABEL[z.c]}</span>`:"—"}</td><td class="num">${sig(z.q)} ${qu}</td><td><button class="linkbtn" data-mm="${z.mm}">Use</button></td></tr>`).join("");
+ // standards
+ $("stdList").innerHTML=STD.map(z=>{const k=classify(R.I,z);const m=!isFinite(R.I)?"":k==="i"?`${Math.min(R.I-z.lo,z.hi-R.I).toFixed(1)} pts inside`:k==="u"?`${(z.lo-R.I).toFixed(1)} pts below`:`${(R.I-z.hi).toFixed(1)} pts above`;
+  return `<label class="stdopt"><input type="radio" name="std" value="${z.id}" ${z.id===stdId?"checked":""}><span><b>${z.n}</b><small>${z.s}</small><span class="rng">${z.lo}–${z.hi}%</span></span><span class="right">${k?`<span class="pill s-${k}">${LABEL[k]}</span>`:""}<small>${m}</small></span></label>`}).join("");
+ // steps
+ buildSteps(s,c); renderSteps();
+ save(); if(cur==="trends")drawAll();
 }
 
-/* ---------- time series ---------- */
+/* ---- what-if ---- */
+function updateAdj(){
+ const f=+$("adj").value/100, I=R.I*f, c=classify(I,std()), qu=$("qfU").value;
+ $("adjPct").textContent=Math.round(f*100)+"%";
+ $("adjQ").textContent=`${sig(fromQ(X.Qf*f,qu))} ${qu}`;
+ $("adjI").textContent=isFinite(I)?I.toFixed(1)+"%":"—";
+ const p=$("adjPill"); p.textContent=c?LABEL[c]:"—"; p.className="pill "+sc(c);
+}
+$("adj").oninput=updateAdj;
+$("adjFit").onclick=()=>{if(isFinite(R.I)&&R.I>0){$("adj").value=Math.max(40,Math.min(180,Math.round(10000/R.I)));updateAdj();}};
+$("adjApply").onclick=()=>{const f=+$("adj").value/100;$("qf").value=+(parseFloat($("qf").value)*f).toPrecision(4);$("adj").value=100;render();toast("Probe flow updated");};
+
+/* ---- steps ---- */
+let STEPS=[], stepIdx=0, stepAll=false;
+function buildSteps(s,c){
+ STEPS=[
+  {t:"Cross-sectional areas",d:"Work out the flow area of the stack and of the nozzle opening.",f:"A = π · D² / 4",
+   s:`Aₛ = π × ${fmt(X.Ds)}² / 4 · Aₙ = π × ${fmt(X.dn)}² / 4`,r:`Aₛ = ${fmt(R.As)} m² · Aₙ = ${fmt(R.An)} m²`},
+  {t:"Stack fluid velocity",d:"Divide the stack flow by the stack area.",f:"Vₑ = Qₛ / Aₛ",
+   s:`Vₑ = ${fmt(X.Qs)} m³/s ÷ ${fmt(R.As)} m²`,r:`Vₑ = ${sig(R.Ve)} m/s`},
+  {t:"Probe flow at stack conditions",d:X.corr?"The meter sees gas at a different temperature and pressure. Convert it to stack conditions with the ideal gas law.":"Correction is switched off, so the meter flow is used as is.",f:X.corr?"Q_f,s = Q_f · (Tₛ/Tₘ) · (Pₘ/Pₛ)":"Q_f,s = Q_f",
+   s:X.corr?`${fmt(X.Qf)} × (${fmt(X.Ts)}/${fmt(X.Tm)}) × (${fmt(X.Pm)}/${fmt(X.Ps)})`:`${fmt(X.Qf)} m³/s`,r:`Q_f,s = ${fmt(R.QfS)} m³/s`},
+  {t:"Nozzle velocity",d:"Divide the corrected probe flow by the nozzle area.",f:"V_f = Q_f,s / Aₙ",
+   s:`V_f = ${fmt(R.QfS)} ÷ ${fmt(R.An)}`,r:`V_f = ${sig(R.Vf)} m/s`},
+  {t:"Isokinetic percentage",d:"Compare nozzle velocity with stack velocity.",f:"I = V_f / Vₑ × 100",
+   s:`I = ${sig(R.Vf)} ÷ ${sig(R.Ve)} × 100`,r:`I = ${isFinite(R.I)?R.I.toFixed(2):"—"} %`},
+  {t:"Classify",d:`Judge the result against ${s.n}.`,f:`${s.lo}% ≤ I ≤ ${s.hi}%`,
+   s:`Below ${s.lo}% is underkinetic, above ${s.hi}% is overkinetic`,r:c?LABEL[c]:"—",c},
+  {t:"Nozzle sizing",d:"The nozzle diameter that would give exactly 100% at this probe flow.",f:"dₙ,req = √(4 · Q_f,s / (π · Vₑ))",
+   s:`√(4 × ${fmt(R.QfS)} / (π × ${sig(R.Ve)}))`,r:`dₙ,req = ${sig(R.dReq*1000)} mm`}
+ ];
+}
+function stepHTML(x,i){return `<div class="step"><div class="n">Step ${i+1} of ${STEPS.length}</div><h3>${x.t}</h3><p>${x.d}</p><div class="formula">${x.f}</div><div class="subst">${x.s}</div><div class="result" ${x.c?`style="color:var(--${x.c==="i"?"ok":x.c==="u"?"warn":"bad"})"`:""}>${x.r}</div></div>`}
+function renderSteps(){
+ $("stepOneBox").hidden=stepAll; $("stepAllBox").hidden=!stepAll;
+ $("stOne").setAttribute("aria-pressed",!stepAll); $("stAll").setAttribute("aria-pressed",stepAll);
+ $("stepDots").innerHTML=STEPS.map((_,i)=>`<button class="${i===stepIdx?"on":i<stepIdx?"done":""}" data-step="${i}" aria-label="Step ${i+1}">${i+1}</button>`).join("");
+ $("stepCur").innerHTML=stepHTML(STEPS[stepIdx],stepIdx);
+ $("stPrev").disabled=stepIdx===0; $("stNext").textContent=stepIdx===STEPS.length-1?"See result":"Next step";
+ $("stepAllBox").innerHTML=STEPS.map(stepHTML).join("");
+}
+$("stPrev").onclick=()=>{if(stepIdx>0){stepIdx--;renderSteps();}};
+$("stNext").onclick=()=>{if(stepIdx<STEPS.length-1){stepIdx++;renderSteps();}else go("display");};
+$("stepDots").onclick=e=>{const b=e.target.closest("[data-step]");if(b){stepIdx=+b.dataset.step;renderSteps();}};
+$("stOne").onclick=()=>{stepAll=false;renderSteps()}; $("stAll").onclick=()=>{stepAll=true;renderSteps()};
+
+/* ---- nozzle & standards events ---- */
+$("nzRows").onclick=e=>{const b=e.target.closest("[data-mm]");if(!b)return;const u=$("dnU").value;$("dn").value=+(b.dataset.mm/1000/U.len[u]).toPrecision(4);render();toast(`Nozzle set to ${b.dataset.mm} mm`);};
+$("stdList").onchange=e=>{if(e.target.name==="std"){stdId=e.target.value;render();}};
+
+/* ---- navigation ---- */
+const TITLES={home:null,inputs:"Measurements",display:"Isokinetic display",steps:"Calculation",nozzle:"Nozzle sizing",standards:"Standards",trends:"Trends",learn:"Learn",about:"About"};
+let cur="home", navDepth=0;
+function show(v){
+ if(!(v in TITLES))v="home"; cur=v;
+ document.querySelectorAll(".view").forEach(s=>s.classList.toggle("active",s.id==="v-"+v));
+ $("title").innerHTML=TITLES[v]??`<span class="logo"><svg><use href="#i-logo"/></svg>Airsens Isokinetic</span>`;
+ $("backBtn").style.visibility=v==="home"?"hidden":"visible";
+ document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.go===v));
+ window.scrollTo(0,0);
+ if(v==="trends")requestAnimationFrame(drawAll);
+}
+function go(v){if(v===cur)return;navDepth++;location.hash=v;}
+window.addEventListener("hashchange",()=>show(location.hash.slice(1)));
+document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b){e.preventDefault();go(b.dataset.go);}});
+$("chip").onclick=()=>go("display");
+$("backBtn").onclick=()=>{if(navDepth>0){navDepth--;history.back();}else{location.hash="home";}};
+
+/* ---- toast ---- */
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.style.opacity=1;clearTimeout(tt);tt=setTimeout(()=>t.style.opacity=0,1600);}
+
+/* ---- examples / reset ---- */
+$("exSlide").onclick=()=>{setVals(EX_SLIDE);render();restartLive();toast("Slide example loaded");};
+$("exReal").onclick=()=>{setVals(EX_REAL);render();restartLive();toast("Stack example loaded");};
+let resetArmed=false;
+$("resetBtn").onclick=()=>{if(!resetArmed){resetArmed=true;$("resetBtn").textContent="Tap again to confirm";$("resetNo").hidden=false;return;}
+ resetArmed=false;$("resetBtn").textContent="Reset all inputs";$("resetNo").hidden=true;try{localStorage.removeItem(KEY)}catch(e){}
+ stdId="m5";$("corr").checked=true;setVals(EX_REAL);render();restartLive();toast("Inputs reset");};
+$("resetNo").onclick=()=>{resetArmed=false;$("resetBtn").textContent="Reset all inputs";$("resetNo").hidden=true;};
+document.querySelectorAll("#v-inputs input,#v-inputs select,#cLo,#cHi").forEach(e=>{e.addEventListener("input",render);e.addEventListener("change",render)});
+
+/* ---- flow animation (display + learn) ---- */
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function mkParts(n){const a=[];for(let i=0;i<n;i++)a.push({x:Math.random(),y:Math.random()*2-1,k:Math.random()<.4?.92:0});return a;}
+const FLOW={flowD:{p:mkParts(70)},flowL:{p:mkParts(80)}};
+function sstep(t){t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)}
+function drawFlow(id,I){
+ const cv=$(id),w=cv.clientWidth,h=cv.clientHeight;if(!w)return;const dpr=window.devicePixelRatio||1;
+ if(cv.width!==Math.round(w*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+ const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+ const yc=h/2,H=h/2-10,rn=h*.17,wt=7,xm=w*.6,L=w*.38,out=rn+wt+3;
+ const ratio=isFinite(I)&&I>0?I/100:1, rc=Math.max(rn*.35,Math.min(H*.92,rn*Math.sqrt(ratio)));
+ const mapY=y0=>{const a=Math.abs(y0),sg=Math.sign(y0)||1;return a<rc?y0*rn*.94/rc:sg*(out+(a-rc)*(H-out)/(H-rc));};
+ const gasY=(x,y0)=>y0+(mapY(y0)-y0)*sstep((x-(xm-L))/L);
+ // capture zone
+ g.fillStyle=css("--accent-soft");g.globalAlpha=.6;g.fillRect(0,yc-rc,xm-L,2*rc);g.globalAlpha=1;
+ // streamlines
+ g.strokeStyle=css("--stream");g.lineWidth=1.4;
+ for(let i=0;i<=16;i++){const y0=-H+2*H*i/16;g.beginPath();for(let x=0;x<=w;x+=6){const y=yc+gasY(x,y0);x?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}
+ // particles
+ const v1=w/420, f=FLOW[id];
+ for(const p of f.p){
+  const x=p.x*w, yg=gasY(x,p.y*H);
+  let y=p.y*H+(yg-p.y*H)*(1-p.k);
+  if(!reduce){const inside=x>xm&&Math.abs(y)<rn;p.x+=(inside?v1*ratio:v1)/w*(p.k?1:1);
+   if(p.k&&x>=xm&&x<xm+6&&Math.abs(y)>=rn&&Math.abs(y)<=rn+wt){p.x=0;p.y=Math.random()*2-1;}
+   if(p.x>1){p.x=0;p.y=Math.random()*2-1;}}
+  g.fillStyle=p.k?css("--fg"):css("--muted");g.beginPath();g.arc(x,yc+y,p.k?3.2:1.8,0,7);g.fill();
+ }
+ // nozzle walls
+ g.fillStyle=css("--muted");g.fillRect(xm,yc-rn-wt,w-xm,wt);g.fillRect(xm,yc+rn,w-xm,wt);
+ g.fillStyle=css("--fg");g.font="600 12px 'JetBrains Mono', monospace";g.textBaseline="top";
+ g.fillText("V₁ stack",8,8);g.fillText("V₂ nozzle",xm+8,yc-rn-wt-18<2?2:yc-rn-wt-18);
+ g.fillStyle=css("--muted");g.font="11px 'JetBrains Mono', monospace";g.textBaseline="bottom";
+ g.fillText(`V₂/V₁ = ${ratio.toFixed(2)}`,8,h-6);
+}
+let learnI=100;
+function loop(){
+ if(cur==="display")drawFlow("flowD",R.I);
+ if(cur==="learn")drawFlow("flowL",learnI);
+ if(cur==="home")drawHero();
+ requestAnimationFrame(loop);
+}
+/* hero ambient streamlines */
+let heroT=0;
+function drawHero(){const cv=$("heroCv"),w=cv.clientWidth,h=cv.clientHeight;if(!w)return;const dpr=window.devicePixelRatio||1;
+ if(cv.width!==Math.round(w*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+ const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);if(!reduce)heroT+=.008;
+ g.strokeStyle="rgba(95,212,225,.35)";g.lineWidth=1;
+ for(let i=0;i<9;i++){const yb=h*.15+i*h*.09;g.beginPath();for(let x=0;x<=w;x+=8){const y=yb+Math.sin(x/90+heroT*2+i*.6)*6;x?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}
+}
+
+/* ---- learn ---- */
+const LTXT={
+ i:["Isokinetic sampling","Nozzle velocity equals stack velocity (V₂ = V₁). Streamlines run straight into the nozzle, so the gas and every particle size are sampled in their true proportions. This is the target condition."],
+ o:["Overkinetic sampling","Nozzle velocity is higher than stack velocity (V₂ > V₁). The nozzle pulls gas from a wider area. Small particles follow the gas in, but large particles keep going straight past the nozzle, so the sample is diluted and large-particle concentration is under-estimated."],
+ u:["Underkinetic sampling","Nozzle velocity is lower than stack velocity (V₂ < V₁). Gas spills around the nozzle, but large particles cannot turn and still enter, so they are concentrated in the sample and large-particle concentration is over-estimated."]
+};
+function setLearn(v){learnI=v;$("lSlider").value=v;$("lPct").textContent=v+"%";
+ const k=v>104?"o":v<96?"u":"i";$("lText").innerHTML=`<h3 style="color:var(--${k==="i"?"ok":k==="u"?"warn":"bad"})">${LTXT[k][0]}</h3><p>${LTXT[k][1]}</p>`;
+ document.querySelectorAll("[data-l]").forEach(b=>b.setAttribute("aria-pressed",(k==="i"&&b.dataset.l==="100")||(k==="o"&&b.dataset.l==="160")||(k==="u"&&b.dataset.l==="55")));
+ const bias=100/v;$("lBias").textContent=bias.toFixed(2);$("lErr").textContent=(bias>=1?"+":"")+((bias-1)*100).toFixed(0)+"%";}
+document.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>setLearn(+b.dataset.l));
+$("lSlider").oninput=e=>setLearn(+e.target.value);
+
+/* ---- time series ---- */
 let mode="live", paused=false, log=[], timer=null, sim=null;
-function pushSample(t,inp){const r=calc(inp);log.push({t,Qs:inp.Qs,Qf:inp.Qf,Ts:inp.Ts,Ps:inp.Ps,Tm:inp.Tm,Pm:inp.Pm,Ve:r.Ve,Vf:r.Vf,I:r.I});if(mode==="live"&&log.length>180)log.shift();}
+function pushSample(t,inp){const r=calc(inp);log.push({t,Qs:inp.Qs,Qf:inp.Qf,Ts:inp.Ts,Ps:inp.Ps,Ve:r.Ve,Vf:r.Vf,I:r.I});if(mode==="live"&&log.length>180)log.shift();}
 function simTick(){
  const base=read(); if(!sim)sim={a:1,b:1,ph:0};
- sim.ph+=.06; sim.a+= (Math.random()-.5)*.012 + (1-sim.a)*.04; sim.b+=(Math.random()-.5)*.016+(1-sim.b)*.05;
- const inp={...base,Qs:base.Qs*sim.a*(1+.05*Math.sin(sim.ph)),Qf:base.Qf*sim.b,Ts:base.Ts+3*Math.sin(sim.ph*.7)};
- pushSample(new Date().toISOString().slice(11,19),inp); drawAll();
+ sim.ph+=.06; sim.a+=(Math.random()-.5)*.012+(1-sim.a)*.04; sim.b+=(Math.random()-.5)*.016+(1-sim.b)*.05;
+ pushSample(new Date().toTimeString().slice(0,8),{...base,Qs:base.Qs*sim.a*(1+.05*Math.sin(sim.ph)),Qf:base.Qf*sim.b,Ts:base.Ts+3*Math.sin(sim.ph*.7)});
+ if(cur==="trends")drawAll();
 }
-function startLive(){clearInterval(timer);log=[];sim=null;for(let i=0;i<40;i++){simTick();log[log.length-1].t="−"+(40-i)+"s";}timer=setInterval(()=>{if(!paused)simTick()},1000);}
-
-function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
-function chart(cv,series,opt){
- const dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=cv.clientHeight; if(!w)return;
- cv.width=w*dpr; cv.height=h*dpr; const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,w,h);
- const L=48,R=12,T=12,B=26, pw=w-L-R, ph=h-T-B, n=log.length;
- let vals=series.flatMap(s=>log.map(s.f)).filter(isFinite); if(opt.band)vals.push(opt.band[0],opt.band[1]);
- if(!vals.length){g.fillStyle=css("--muted");g.font="13px Barlow, sans-serif";g.fillText("No data yet",L,T+20);return;}
- let lo=Math.min(...vals), hi=Math.max(...vals); const pad=(hi-lo)*.12||Math.abs(hi)*.1||1; lo-=pad; hi+=pad;
- const step=niceStep((hi-lo)/4); lo=Math.floor(lo/step)*step; hi=Math.ceil(hi/step)*step;
- const X=i=>L+(n<2?pw/2:i/(n-1)*pw), Y=v=>T+(hi-v)/(hi-lo)*ph;
- g.font="11px 'JetBrains Mono', monospace"; g.textAlign="right"; g.textBaseline="middle";
- for(let v=lo;v<=hi+1e-9;v+=step){g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();g.moveTo(L,Y(v));g.lineTo(w-R,Y(v));g.stroke();g.fillStyle=css("--muted");g.fillText(+v.toFixed(3)+(opt.unit||""),L-6,Y(v));}
- if(opt.band){g.fillStyle=css("--band");g.fillRect(L,Y(opt.band[1]),pw,Y(opt.band[0])-Y(opt.band[1]));g.strokeStyle=css("--ok");g.setLineDash([4,4]);for(const b of opt.band){g.beginPath();g.moveTo(L,Y(b));g.lineTo(w-R,Y(b));g.stroke();}g.setLineDash([]);}
- g.textAlign="center"; g.textBaseline="top"; g.fillStyle=css("--muted");
- const ticks=Math.min(5,n); for(let k=0;k<ticks;k++){const i=Math.round(k*(n-1)/Math.max(1,ticks-1));g.fillText(String(log[i].t),Math.min(Math.max(X(i),L+20),w-R-20),h-B+7);}
- for(const s of series){
-  const col=css(s.c); g.strokeStyle=col; g.lineWidth=2; g.beginPath(); let started=false;
-  log.forEach((d,i)=>{const v=s.f(d);if(!isFinite(v))return;started?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v));started=true});g.stroke();
-  if(s.fill){g.lineTo(X(n-1),T+ph);g.lineTo(X(0),T+ph);g.closePath();g.globalAlpha=.08;g.fillStyle=col;g.fill();g.globalAlpha=1;}
-  const last=log[n-1]; if(last&&isFinite(s.f(last))){g.fillStyle=col;g.beginPath();g.arc(X(n-1),Y(s.f(last)),4,0,7);g.fill();}
- }
-}
+function restartLive(){if(mode!=="live")return;clearInterval(timer);log=[];sim=null;for(let i=0;i<40;i++){simTick();log[log.length-1].t="−"+(40-i)+"s";}timer=setInterval(()=>{if(!paused)simTick()},1000);}
 function niceStep(x){const p=10**Math.floor(Math.log10(x||1)),m=x/p;return (m<=1?1:m<=2?2:m<=5?5:10)*p}
+function chart(cv,series,opt){
+ const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;if(!w)return;
+ cv.width=w*dpr;cv.height=h*dpr;const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+ const L=50,Rm=12,T=12,B=26,pw=w-L-Rm,ph=h-T-B,n=log.length;
+ let vals=series.flatMap(s=>log.map(s.f)).filter(isFinite);if(opt.band)vals.push(...opt.band);
+ if(!vals.length){g.fillStyle=css("--muted");g.font="13px Barlow, sans-serif";g.fillText("No data yet",L,T+20);return;}
+ let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo)*.12||Math.abs(hi)*.1||1;lo-=pad;hi+=pad;
+ const step=niceStep((hi-lo)/4);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
+ const X=i=>L+(n<2?pw/2:i/(n-1)*pw),Y=v=>T+(hi-v)/(hi-lo)*ph;
+ g.font="11px 'JetBrains Mono', monospace";g.textAlign="right";g.textBaseline="middle";
+ for(let v=lo;v<=hi+1e-9;v+=step){g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();g.moveTo(L,Y(v));g.lineTo(w-Rm,Y(v));g.stroke();g.fillStyle=css("--muted");g.fillText(+v.toFixed(3)+(opt.unit||""),L-6,Y(v));}
+ if(opt.band){g.fillStyle=css("--ok-soft");g.fillRect(L,Y(opt.band[1]),pw,Y(opt.band[0])-Y(opt.band[1]));g.strokeStyle=css("--ok");g.setLineDash([4,4]);for(const b of opt.band){g.beginPath();g.moveTo(L,Y(b));g.lineTo(w-Rm,Y(b));g.stroke();}g.setLineDash([]);}
+ g.textAlign="center";g.textBaseline="top";g.fillStyle=css("--muted");
+ const ticks=Math.min(4,n);for(let k=0;k<ticks;k++){const i=Math.round(k*(n-1)/Math.max(1,ticks-1));g.fillText(String(log[i].t),Math.min(Math.max(X(i),L+24),w-Rm-24),h-B+7);}
+ for(const s of series){const col=css(s.c);g.strokeStyle=col;g.lineWidth=2;g.beginPath();let st=false;
+  log.forEach((d,i)=>{const v=s.f(d);if(!isFinite(v))return;st?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v));st=true});g.stroke();
+  const last=log[n-1];if(last&&isFinite(s.f(last))){g.fillStyle=col;g.beginPath();g.arc(X(n-1),Y(s.f(last)),4,0,7);g.fill();}}
+}
 function drawAll(){
  const s=std();
- chart($("cIso"),[{f:d=>d.I,c:"--accent",fill:true}],{band:[s.lo,s.hi],unit:"%"});
+ chart($("cIso"),[{f:d=>d.I,c:"--accent"}],{band:[s.lo,s.hi],unit:"%"});
  chart($("cVel"),[{f:d=>d.Ve,c:"--fg"},{f:d=>d.Vf,c:"--accent"}],{});
- const v=log.filter(d=>isFinite(d.I)); if(!v.length){$("stats").innerHTML="";return;}
- const inb=v.filter(d=>d.I>=s.lo&&d.I<=s.hi).length, mean=v.reduce((a,d)=>a+d.I,0)/v.length;
- const mn=Math.min(...v.map(d=>d.I)), mx=Math.max(...v.map(d=>d.I));
- $("stats").innerHTML=`<span>Samples <b>${v.length}</b></span><span>Mean I <b>${mean.toFixed(1)}%</b></span><span>Min / max <b>${mn.toFixed(1)} / ${mx.toFixed(1)}%</b></span><span>Time within ${s.lo}–${s.hi}% <b>${(inb/v.length*100).toFixed(0)}%</b></span>`;
+ const v=log.filter(d=>isFinite(d.I));if(!v.length){$("stats").innerHTML="";return;}
+ const inb=v.filter(d=>d.I>=s.lo&&d.I<=s.hi).length,mean=v.reduce((a,d)=>a+d.I,0)/v.length;
+ $("stats").innerHTML=`<div><div class="k">Samples</div><div class="v">${v.length}</div></div><div><div class="k">Mean I</div><div class="v">${mean.toFixed(1)}%</div></div><div><div class="k">Min / max</div><div class="v">${Math.min(...v.map(d=>d.I)).toFixed(0)}/${Math.max(...v.map(d=>d.I)).toFixed(0)}%</div></div><div><div class="k">Within ${s.lo}–${s.hi}%</div><div class="v">${(inb/v.length*100).toFixed(0)}%</div></div>`;
 }
-
 function parseCSV(txt){
- const lines=txt.trim().split(/\r?\n/).filter(l=>l.trim()); if(lines.length<2)throw new Error("Add a header row and at least one data row.");
- const h=lines[0].split(/[,;\t]/).map(s=>s.trim().toLowerCase());
- const ix=n=>h.indexOf(n); if(ix("stack_flow")<0||ix("probe_flow")<0)throw new Error("Header needs stack_flow and probe_flow columns.");
- const base=read(), u=id=>$(id+"U").value; log=[];
- for(const l of lines.slice(1)){const c=l.split(/[,;\t]/).map(s=>s.trim()); const num=n=>ix(n)>=0&&c[ix(n)]!==""?parseFloat(c[ix(n)]):NaN;
+ const lines=txt.trim().split(/\r?\n/).filter(l=>l.trim());if(lines.length<2)throw new Error("Add a header row and at least one data row.");
+ const h=lines[0].split(/[,;\t]/).map(s=>s.trim().toLowerCase()),ix=n=>h.indexOf(n);
+ if(ix("stack_flow")<0||ix("probe_flow")<0)throw new Error("The header needs stack_flow and probe_flow columns.");
+ const base=read(),u=id=>$(id+"U").value;log=[];
+ for(const l of lines.slice(1)){const c=l.split(/[,;\t]/).map(s=>s.trim()),num=n=>ix(n)>=0&&c[ix(n)]!==""?parseFloat(c[ix(n)]):NaN;
   const inp={...base,Qs:toQ(num("stack_flow"),u("qs")),Qf:toQ(num("probe_flow"),u("qf"))};
-  if(isFinite(num("stack_t")))inp.Ts=toK(num("stack_t"),u("ts")); if(isFinite(num("stack_p")))inp.Ps=toP(num("stack_p"),u("ps"));
-  if(isFinite(num("meter_t")))inp.Tm=toK(num("meter_t"),u("tm")); if(isFinite(num("meter_p")))inp.Pm=toP(num("meter_p"),u("pm"));
+  if(isFinite(num("stack_t")))inp.Ts=toK(num("stack_t"),u("ts"));if(isFinite(num("stack_p")))inp.Ps=toP(num("stack_p"),u("ps"));
+  if(isFinite(num("meter_t")))inp.Tm=toK(num("meter_t"),u("tm"));if(isFinite(num("meter_p")))inp.Pm=toP(num("meter_p"),u("pm"));
   pushSample(ix("time")>=0?c[ix("time")]:String(log.length+1),inp);}
  return log.length;
 }
 function sampleCSV(){
- const b=read(), qs=+$("qs").value, qf=+$("qf").value, ts=+$("ts").value, ps=+$("ps").value;
- let out="time,stack_flow,probe_flow,stack_T,stack_P\n";
+ const qs=+$("qs").value,qf=+$("qf").value,ts=+$("ts").value,ps=+$("ps").value;let o="time,stack_flow,probe_flow,stack_T,stack_P\n";
  for(let i=0;i<60;i++){const t=`${String(8+Math.floor(i/6)).padStart(2,"0")}:${String(i%6*10).padStart(2,"0")}`;
-  const a=1+.08*Math.sin(i/7)+(Math.random()-.5)*.04, f=i>24&&i<34?.86:1+(Math.random()-.5)*.05;
-  out+=`${t},${(qs*a).toPrecision(5)},${(qf*f).toPrecision(4)},${(ts+4*Math.sin(i/9)).toFixed(1)},${ps}\n`;}
- return out;
+  const a=1+.08*Math.sin(i/7)+(Math.random()-.5)*.04,f=i>24&&i<34?.86:1+(Math.random()-.5)*.05;
+  o+=`${t},${(qs*a).toPrecision(5)},${(qf*f).toPrecision(4)},${(ts+4*Math.sin(i/9)).toFixed(1)},${ps}\n`;}
+ return o;
 }
-
+function plotCSV(){try{$("csvMsg").textContent=`${parseCSV($("csv").value)} rows plotted.`}catch(e){$("csvMsg").textContent=e.message}drawAll();}
 function setMode(m){mode=m;$("mLive").setAttribute("aria-pressed",m==="live");$("mHist").setAttribute("aria-pressed",m==="hist");
- $("histBox").hidden=m!=="hist"; $("pause").hidden=m!=="live";
- if(m==="live"){startLive();}else{clearInterval(timer);if(!$("csv").value)$("csv").value=sampleCSV();try{const n=parseCSV($("csv").value);$("csvMsg").textContent=`${n} rows plotted.`}catch(e){$("csvMsg").textContent=e.message}drawAll();}}
-$("mLive").onclick=()=>setMode("live"); $("mHist").onclick=()=>setMode("hist");
+ $("histBox").hidden=m!=="hist";$("liveCtl").hidden=m!=="live";$("liveNote").hidden=m!=="live";
+ if(m==="live")restartLive();else{clearInterval(timer);if(!$("csv").value)$("csv").value=sampleCSV();plotCSV();}}
+$("mLive").onclick=()=>setMode("live");$("mHist").onclick=()=>setMode("hist");
 $("pause").onclick=()=>{paused=!paused;$("pause").textContent=paused?"Resume":"Pause"};
-$("plot").onclick=()=>{try{const n=parseCSV($("csv").value);$("csvMsg").textContent=`${n} rows plotted.`}catch(e){$("csvMsg").textContent=e.message}drawAll()};
-$("sample").onclick=()=>{$("csv").value=sampleCSV();$("plot").click()};
-$("file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$("csv").value=r.result;$("plot").click()};r.readAsText(f)};
+$("plot").onclick=plotCSV;$("sample").onclick=()=>{$("csv").value=sampleCSV();plotCSV()};
+$("file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$("csv").value=r.result;plotCSV()};r.readAsText(f)};
 $("copyCsv").onclick=async()=>{
  const txt="time,stack_flow_m3s,probe_flow_m3s,stack_T_K,stack_P_kPa,Ve_ms,Vf_ms,isokinetic_pct\n"+log.map(d=>[d.t,d.Qs,d.Qf,d.Ts.toFixed(2),d.Ps,d.Ve.toFixed(4),d.Vf.toFixed(4),d.I.toFixed(2)].join(",")).join("\n");
- try{await navigator.clipboard.writeText(txt);$("copyCsv").textContent="Copied";}catch(e){$("csv").value=txt;setMode("hist");$("csv").select();$("csvMsg").textContent="Clipboard blocked. Log placed in the box; copy it from there.";}
- setTimeout(()=>$("copyCsv").textContent="Copy log as CSV",1500);
+ try{await navigator.clipboard.writeText(txt);toast("Log copied");}catch(e){$("csv").value=txt;setMode("hist");$("csvMsg").textContent="Clipboard blocked. The log is in the box above; copy it from there.";}
 };
-$("exSlide").onclick=()=>{setVals(EX_SLIDE);render();if(mode==="live")startLive()};
-$("exReal").onclick=()=>{setVals(EX_REAL);render();if(mode==="live")startLive()};
-document.querySelectorAll("input,select").forEach(e=>{if(e.closest("#histBox"))return;e.addEventListener("input",render);e.addEventListener("change",render)});
-window.addEventListener("resize",drawAll);
-matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",drawAll);
-new MutationObserver(drawAll).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+window.addEventListener("resize",()=>{if(cur==="trends")drawAll()});
 
-setVals(EX_REAL); render(); startLive();
+/* ---- start ---- */
+if(!load())setVals(EX_REAL);
+render(); setLearn(100); restartLive();
+show(location.hash.slice(1)||"home");
+requestAnimationFrame(loop);
 </script>
 
 </body></html>
