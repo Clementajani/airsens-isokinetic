@@ -1,0 +1,1332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Isokinetic">
+<meta name="theme-color" content="#0e7c8c">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}input,select,textarea{font-size:16px!important}</style>
+<title>Airsens Isokinetic Monitor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: mobile app shell — sticky app bar, one screen per task, bottom tab bar; welcome screen is a menu of tiles. EN / FR / AR (RTL). */
+:root{
+  --bg:#eef2f4; --panel:#ffffff; --line:#d3dce1; --fg:#14232b; --muted:#5b6f7a;
+  --accent:#0e7c8c; --accent-soft:#d6eef1; --hero:#0f3a44; --hero-fg:#e6f4f6;
+  --ok:#1f9a4b; --ok-soft:#dcf1e3; --warn:#c27f05; --warn-soft:#fbeed2; --bad:#c8372d; --bad-soft:#f8dedb;
+  --led-off:#cfd8dc; --stream:rgba(14,124,140,.28);
+  --c1:#0e7c8c; --c2:#c2416e; --c3:#5b55c9; --c4:#b87503; --c5:#2f8a4f; --c6:#8b5a2b;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Barlow",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1519; --panel:#152127; --line:#26363e; --fg:#e3ecef; --muted:#8ea3ad;
+  --accent:#3cc0cf; --accent-soft:#163940; --hero:#0a2a31; --hero-fg:#e6f4f6;
+  --ok:#3ccf72; --ok-soft:#173a26; --warn:#f0a929; --warn-soft:#3d2f12; --bad:#ef5b4f; --bad-soft:#40201d;
+  --led-off:#2b3a41; --stream:rgba(60,192,207,.25); --c1:#3cc0cf; --c2:#ee7aa3; --c3:#9d97f2; --c4:#f0a929; --c5:#5fd08a; --c6:#d29a6a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1519; --panel:#152127; --line:#26363e; --fg:#e3ecef; --muted:#8ea3ad;
+  --accent:#3cc0cf; --accent-soft:#163940; --hero:#0a2a31; --hero-fg:#e6f4f6;
+  --ok:#3ccf72; --ok-soft:#173a26; --warn:#f0a929; --warn-soft:#3d2f12; --bad:#ef5b4f; --bad-soft:#40201d;
+  --led-off:#2b3a41; --stream:rgba(60,192,207,.25); --c1:#3cc0cf; --c2:#ee7aa3; --c3:#9d97f2; --c4:#f0a929; --c5:#5fd08a; --c6:#d29a6a; color-scheme:dark}
+html[lang="ar"]{--f-body:"IBM Plex Sans Arabic","Barlow",system-ui,sans-serif;--f-display:"IBM Plex Sans Arabic","Barlow Condensed",sans-serif}
+html[lang="ar"] *{letter-spacing:0!important}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.inner{max-width:760px;margin:0 auto}
+.ltr,.formula,.subst,.result,.mono,.bigread,.kv .v,td.num,#chipTxt,.status-card .num,.stats .v,.bias .v,.rng{direction:ltr;unicode-bidi:isolate}
+[dir="rtl"] .kv .v,[dir="rtl"] .result,[dir="rtl"] .subst,[dir="rtl"] .stats .v,[dir="rtl"] .bias .v,[dir="rtl"] .formula{text-align:right}
+[dir="rtl"] .flip{transform:scaleX(-1)}
+
+/* app bar */
+.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+.appbar > .inner{display:grid;grid-template-columns:40px minmax(0,1fr) auto auto;align-items:center;gap:6px;padding-block:8px}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:0;background:transparent;color:var(--fg);cursor:pointer;padding:0}
+.iconbtn:hover{background:var(--accent-soft)}
+.iconbtn svg{width:22px;height:22px}
+.appbar h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:21px;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:13px;font-weight:600;padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer;font-variant-numeric:tabular-nums;min-height:36px}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--led-off)}
+.langbtn{font-family:var(--f-display);font-weight:700;font-size:14px;gap:4px;padding:6px 9px}
+.langbtn svg{width:17px;height:17px}
+.s-i{--s:var(--ok);--s-soft:var(--ok-soft)} .s-u{--s:var(--warn);--s-soft:var(--warn-soft)} .s-o{--s:var(--bad);--s-soft:var(--bad-soft)}
+.chip.s-i i,.chip.s-u i,.chip.s-o i{background:var(--s)}
+.logo{display:inline-flex;align-items:center;gap:7px}
+.logo svg{width:28px;height:28px;flex:none}
+.langmenu{position:fixed;z-index:9;top:calc(env(safe-area-inset-top,0px) + 58px);inset-inline-end:max(16px,env(safe-area-inset-right,0px));background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;display:grid;min-width:190px}
+.langmenu button{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;background:transparent;color:var(--fg);padding:12px;border-radius:8px;font-size:16px;cursor:pointer;text-align:start}
+.langmenu button:hover{background:var(--accent-soft)}
+.langmenu button[aria-pressed="true"]{color:var(--accent);font-weight:600}
+.langmenu small{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
+/* views */
+main{padding-block:16px calc(84px + env(safe-area-inset-bottom,0px))}
+.view{display:none}
+.view.active{display:grid;gap:14px;animation:rise .28s ease-out}
+@keyframes rise{from{transform:translateY(6px);opacity:.6}to{transform:none;opacity:1}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px;min-width:0}
+.card h2{margin:0;font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.lead{margin:0;color:var(--muted);max-width:62ch}
+.lbl{font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* buttons & controls */
+button{font:inherit}
+.btn{font-family:var(--f-display);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:14px;padding:11px 16px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer;min-height:44px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.btn.primary:hover{filter:brightness(1.08);color:var(--panel)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:default}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+.btnrow .grow{flex:1 1 180px}
+select,input[type=number],input[type=text],textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;min-height:44px}
+input[type=number]{font-family:var(--f-mono);font-size:15px;text-align:right;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=range]{width:100%;accent-color:var(--accent);min-height:32px}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--panel);color:var(--fg);padding:10px 8px;font-family:var(--f-display);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:13.5px;cursor:pointer;min-height:42px}
+.seg button+button{border-inline-start:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--panel)}
+.seg.lang button{text-transform:none;font-size:15px;letter-spacing:0}
+.seg.lang button[data-lang="ar"]{font-family:"IBM Plex Sans Arabic",sans-serif}
+
+/* home */
+.hero{background:var(--hero);color:var(--hero-fg);border-radius:16px;padding:22px 18px;display:grid;gap:14px;position:relative;overflow:hidden}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.5;pointer-events:none}
+.hero > *{position:relative}
+.hero .brand{display:flex;align-items:center;gap:10px;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:28px;letter-spacing:.02em}
+.hero .brand svg{width:40px;height:40px}
+.hero .brand b{color:#5fd4e1}
+.hero h2{margin:0;font-family:var(--f-display);font-weight:600;font-size:clamp(28px,8vw,42px);line-height:1.08;text-wrap:balance}
+.hero p{margin:0;opacity:.82;max-width:44ch}
+.status-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;cursor:pointer;text-align:start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--fg);width:100%}
+.status-card:hover{border-color:var(--accent)}
+.status-card .lamp{width:44px;height:44px;border-radius:50%;background:var(--led-off);box-shadow:0 0 0 4px var(--bg)}
+.status-card.s-i .lamp,.status-card.s-u .lamp,.status-card.s-o .lamp{background:var(--s);box-shadow:0 0 18px var(--s)}
+.status-card .num{font-family:var(--f-mono);font-weight:600;font-size:28px;line-height:1;font-variant-numeric:tabular-nums;display:inline-block}
+.status-card .sub{font-size:13px;color:var(--muted)}
+.status-card .go{color:var(--muted)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:620px){.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.tile{display:grid;gap:8px;align-content:start;text-align:start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;color:var(--fg);min-height:118px;transition:transform .15s,border-color .15s}
+.tile:hover{border-color:var(--accent);transform:translateY(-2px)}
+.tile:active{transform:scale(.98)}
+.tile .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.tile .ic svg{width:22px;height:22px}
+.tile b{font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.02em;line-height:1.15}
+.tile span{font-size:12.5px;color:var(--muted);line-height:1.3}
+.langcard{display:grid;gap:8px}
+
+/* inputs */
+.field{display:grid;grid-template-columns:minmax(0,1fr) 7.2rem 6.4rem;gap:8px;align-items:center}
+.field label{display:grid;gap:0;font-size:14.5px}
+.field label em{font-style:normal;font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+@media (max-width:420px){.field{grid-template-columns:minmax(0,1fr) 6.2rem}.field label{grid-column:1/-1}}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--muted)}
+.chk input{width:20px;height:20px;margin-top:1px;accent-color:var(--accent);flex:none}
+
+/* display */
+.gauge-wrap{display:grid;justify-items:center;gap:4px}
+.gauge{width:100%;max-width:380px;height:auto;display:block}
+.gauge .needle{transition:transform .5s cubic-bezier(.3,1.4,.5,1)}
+.bigread{font-family:var(--f-mono);font-weight:600;font-size:clamp(40px,11vw,56px);line-height:1;font-variant-numeric:tabular-nums;text-align:center}
+.bigread small{font-size:.42em;color:var(--muted);margin-left:3px}
+.statusTxt{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.1em;text-transform:uppercase;text-align:center;color:var(--muted)}
+.statusTxt.s-i,.statusTxt.s-u,.statusTxt.s-o{color:var(--s)}
+.leds{display:flex;justify-content:center;gap:14px}
+.led{display:grid;justify-items:center;gap:6px;font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);width:78px;text-align:center}
+.led i{width:32px;height:32px;border-radius:50%;background:var(--led-off);border:2px solid var(--line);transition:background .25s,box-shadow .25s}
+.led.on{color:var(--fg)}
+.led.u.on i{background:var(--warn);box-shadow:0 0 18px var(--warn)}
+.led.i.on i{background:var(--ok);box-shadow:0 0 18px var(--ok)}
+.led.o.on i{background:var(--bad);box-shadow:0 0 18px var(--bad)}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.kv > div{border-top:1px solid var(--line);padding-top:6px;min-width:0}
+.kv .k{font-size:12.5px;color:var(--muted)}
+.kv .v{font-family:var(--f-mono);font-size:17px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kv .v small{color:var(--muted);font-size:12px;font-family:var(--f-body)}
+.flowcv{width:100%;height:190px;display:block;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.whatif{display:grid;gap:8px}
+.whatif .out{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;font-size:14px}
+.pill{display:inline-block;font-family:var(--f-display);font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:99px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.pill.s-i,.pill.s-u,.pill.s-o{background:var(--s-soft);color:var(--s)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* steps */
+.dots{display:flex;gap:6px;justify-content:center;direction:ltr}
+.dots button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-family:var(--f-mono);font-size:12px;cursor:pointer;padding:0}
+.dots button.on{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.dots button.done{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.step{display:grid;gap:10px}
+.step .n{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.step h3{margin:0;font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.15}
+.step p{margin:0;color:var(--muted);max-width:60ch}
+.formula{font-family:var(--f-mono);font-size:15px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto;white-space:nowrap}
+.subst{font-family:var(--f-mono);font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.result{font-family:var(--f-mono);font-weight:600;font-size:24px;color:var(--fg)}
+.result.word{font-family:var(--f-display);direction:inherit}
+.allsteps{display:grid;gap:12px}
+.allsteps .step{border-top:1px solid var(--line);padding-top:12px}
+
+/* tables & lists */
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:start;padding:10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--f-display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px;color:var(--muted)}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+[dir="rtl"] td.num{text-align:right}
+tr.best td{background:var(--ok-soft)}
+tr.cur td{font-weight:600}
+.linkbtn{border:1px solid var(--line);background:var(--panel);color:var(--accent);border-radius:7px;padding:6px 10px;font-family:var(--f-display);font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:12.5px;cursor:pointer}
+.stdlist{display:grid;gap:10px}
+.stdopt{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
+.stdopt.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.stdopt input{width:20px;height:20px;accent-color:var(--accent);margin:0}
+.stdopt b{font-family:var(--f-display);font-weight:700;font-size:17px;display:block}
+.stdopt small{color:var(--muted);font-size:12.5px;display:block}
+.stdopt .rng{font-family:var(--f-mono);font-size:13px;display:inline-block}
+.stdopt .right{display:grid;justify-items:end;gap:4px;text-align:end}
+.custom{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.custom input{width:6rem}
+
+/* trends */
+.chartcv{width:100%;height:210px;display:block;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:14px;height:3px;margin-inline-end:6px;vertical-align:middle;background:var(--c)}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:560px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.stats div{background:var(--bg);border-radius:8px;padding:8px 10px}
+.stats .k{font-size:12px;color:var(--muted)}
+.stats .v{font-family:var(--f-mono);font-weight:600;font-size:16px}
+textarea{width:100%;min-height:110px;font-family:var(--f-mono);font-size:12px}
+.note{font-size:13px;color:var(--muted);margin:0;max-width:70ch}
+code{font-family:var(--f-mono);font-size:12.5px;direction:ltr;unicode-bidi:isolate}
+
+/* learn */
+.explain{display:grid;gap:6px}
+.explain h3{margin:0;font-family:var(--f-display);font-weight:700;font-size:22px}
+.explain p{margin:0;max-width:62ch}
+.bias{display:flex;gap:12px;flex-wrap:wrap}
+.bias div{flex:1 1 140px;background:var(--bg);border-radius:8px;padding:10px}
+.bias .v{font-family:var(--f-mono);font-weight:600;font-size:20px}
+.bias .k{font-size:12px;color:var(--muted)}
+
+/* tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar .inner{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.tab{display:grid;justify-items:center;gap:2px;padding:8px 2px 9px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--f-display);font-weight:600;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tab svg{width:23px;height:23px}
+.tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.tab.on{color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:14px;z-index:8;transition:opacity .25s;max-width:calc(100% - 32px);pointer-events:none}
+/* stacks */
+.stackbar{border-top:1px solid var(--line)}
+.strip{display:flex;gap:6px;overflow-x:auto;padding-block:7px;scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.schip{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:5px 11px;font-size:13.5px;cursor:pointer;min-height:34px;max-width:220px}
+.schip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.schip i{width:8px;height:8px;border-radius:50%;background:var(--led-off);flex:none}
+.schip.s-i i,.schip.s-u i,.schip.s-o i{background:var(--s)}
+.schip b{font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--muted)}
+.schip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.schip.on b{color:var(--accent)}
+.schip.add{font-size:17px;padding:4px 12px;color:var(--accent)}
+.ovsum{font-family:var(--f-display);font-weight:600;font-size:16px;color:var(--muted)}
+.stackgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.scard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;cursor:pointer;min-width:0}
+.scard:hover{border-color:var(--accent)}
+.scard.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.scard header{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.swatch{width:12px;height:12px;border-radius:3px}
+.sname b{display:block;font-family:var(--f-display);font-weight:700;font-size:19px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sname small{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--f-display);font-weight:600;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.badge.live{background:var(--accent-soft);color:var(--accent)}
+.badge.live::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+.srow{display:flex;align-items:center;gap:10px}
+.srow .lamp{width:14px;height:14px;border-radius:50%;background:var(--led-off);flex:none}
+.scard.s-i .lamp,.scard.s-u .lamp,.scard.s-o .lamp{background:var(--s);box-shadow:0 0 10px var(--s)}
+.srow .big{font-family:var(--f-mono);font-weight:600;font-size:28px;line-height:1;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.srow .pill{margin-inline-start:auto}
+.spark{width:100%;height:56px;display:block}
+.smeta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.sbtns{display:flex;gap:8px;justify-content:flex-end}
+.linkbtn.primary{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.editor{border-color:var(--accent)}
+.ef{display:grid;gap:5px}
+.ef input[type=text],.ef select{width:100%}
+.hlist{display:grid}
+.hrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 2px;border:0;border-top:1px solid var(--line);background:none;color:var(--fg);text-align:start;width:100%;cursor:pointer}
+.hrow .dot{width:12px;height:12px;border-radius:50%;background:var(--led-off)}
+.hrow.s-i .dot,.hrow.s-u .dot,.hrow.s-o .dot{background:var(--s)}
+.hrow b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hrow small{display:block;font-size:12px;color:var(--muted)}
+.hrow .mono{font-weight:600;font-size:16px}
+.hrow.s-i .mono,.hrow.s-u .mono,.hrow.s-o .mono{color:var(--s)}
+.trendname{font-family:var(--f-display);font-weight:700;font-size:18px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-input" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></g></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3.5 17a9 9 0 1 1 17 0"/><path d="M12 15l4-6"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/></g></symbol>
+  <symbol id="i-steps" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 5.5l1 1 1.8-2M4 11.5l1 1 1.8-2M4 17.5l1 1 1.8-2"/></g></symbol>
+  <symbol id="i-nozzle" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h7l4 2v2l-4 2H3"/><path d="M14 12h7M17 9.5l3 2.5-3 2.5"/></g></symbol>
+  <symbol id="i-std" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13l2 2 4-4" stroke-linecap="round"/></g></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M4 16l4-5 4 3 4-7 4 4"/></g></symbol>
+  <symbol id="i-learn" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8c3-3 6-3 9 0s6 3 9 0M3 14c3-3 6-3 9 0s6 3 9 0"/><circle cx="7" cy="19" r="1" fill="currentColor"/><circle cx="15" cy="4" r="1" fill="currentColor"/></g></symbol>
+  <symbol id="i-stack" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 21V9h4v12M10 21V5h4v16M16 21v-9h4v9"/><path d="M2.5 21h19" stroke-linecap="round"/></g></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></g></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></g></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-logo" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="#3cc0cf" stroke-width="3"/><path d="M8 22c4-6 8-6 12 0s8 6 12 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M10 15c3-3 6-3 9 0" fill="none" stroke="#3cc0cf" stroke-width="2.5" stroke-linecap="round"/></symbol>
+</svg>
+
+<header class="appbar gut">
+  <div class="inner">
+    <button class="iconbtn" id="backBtn" data-ta="back"><svg class="flip"><use href="#i-back"/></svg></button>
+    <h1 id="title"></h1>
+    <button class="chip langbtn" id="langBtn" data-ta="language" aria-haspopup="true" aria-expanded="false"><svg><use href="#i-globe"/></svg><span id="langCode">EN</span></button>
+    <button class="chip" id="chip" data-ta="openDisplay"><i></i><span id="chipTxt">—</span></button>
+  </div>
+  <div class="stackbar" id="stackBar" hidden><div class="inner"><div class="strip" id="strip"></div></div></div>
+</header>
+<div class="langmenu" id="langMenu" hidden role="menu">
+  <button data-lang="en" role="menuitemradio">English <small>EN</small></button>
+  <button data-lang="fr" role="menuitemradio">Français <small>FR</small></button>
+  <button data-lang="ar" role="menuitemradio" style="font-family:'IBM Plex Sans Arabic',sans-serif">العربية <small>AR</small></button>
+</div>
+
+<main class="gut">
+<div class="inner">
+
+<!-- HOME -->
+<section class="view" id="v-home">
+  <div class="hero">
+    <canvas id="heroCv" aria-hidden="true"></canvas>
+    <div class="brand" dir="ltr"><svg><use href="#i-logo"/></svg><span>Air<b>sens</b></span></div>
+    <h2 data-t="heroTitle"></h2>
+    <p data-t="heroText"></p>
+  </div>
+  <button class="status-card" id="homeStatus" data-go="display">
+    <span class="lamp"></span>
+    <span><span class="num" id="homeI">—</span><br><span class="sub" id="homeSub">—</span></span>
+    <svg class="go flip" width="22" height="22"><use href="#i-chev"/></svg>
+  </button>
+  <div class="card">
+    <h2 data-t="t_stacks"></h2>
+    <div class="ovsum" id="homeSum"></div>
+    <div class="hlist" id="homeList"></div>
+    <button class="btn primary" data-go="stacks" data-t="monitorAll"></button>
+  </div>
+  <div class="tiles">
+    <button class="tile" data-go="inputs"><span class="ic"><svg><use href="#i-input"/></svg></span><b data-t="t_inputs"></b><span data-t="t_inputs_s"></span></button>
+    <button class="tile" data-go="display"><span class="ic"><svg><use href="#i-gauge"/></svg></span><b data-t="t_display"></b><span data-t="t_display_s"></span></button>
+    <button class="tile" data-go="steps"><span class="ic"><svg><use href="#i-steps"/></svg></span><b data-t="t_steps"></b><span data-t="t_steps_s"></span></button>
+    <button class="tile" data-go="nozzle"><span class="ic"><svg><use href="#i-nozzle"/></svg></span><b data-t="t_nozzle"></b><span data-t="t_nozzle_s"></span></button>
+    <button class="tile" data-go="standards"><span class="ic"><svg><use href="#i-std"/></svg></span><b data-t="t_std"></b><span data-t="t_std_s"></span></button>
+    <button class="tile" data-go="trends"><span class="ic"><svg><use href="#i-trend"/></svg></span><b data-t="t_trends"></b><span data-t="t_trends_s"></span></button>
+    <button class="tile" data-go="learn"><span class="ic"><svg><use href="#i-learn"/></svg></span><b data-t="t_learn"></b><span data-t="t_learn_s"></span></button>
+    <button class="tile" data-go="about"><span class="ic"><svg><use href="#i-info"/></svg></span><b data-t="t_about"></b><span data-t="t_about_s"></span></button>
+  </div>
+  <div class="card langcard">
+    <h2 data-t="language"></h2>
+    <div class="seg lang" role="group">
+      <button data-lang="en">English</button><button data-lang="fr">Français</button><button data-lang="ar">العربية</button>
+    </div>
+  </div>
+</section>
+
+<!-- STACKS -->
+<section class="view" id="v-stacks">
+  <p class="lead" data-t="ov_lead"></p>
+  <div class="ovsum" id="ovSum"></div>
+  <div class="stackgrid" id="stackGrid"></div>
+  <button class="btn primary" id="addBtn" data-t="addStack"></button>
+  <div class="card editor" id="editor" hidden>
+    <h2 id="edTitle"></h2>
+    <div class="ef"><label class="lbl" for="edName" data-t="stackName"></label><input type="text" id="edName" maxlength="40"></div>
+    <div class="ef"><label class="lbl" for="edLoc" data-t="location"></label><input type="text" id="edLoc" maxlength="60"></div>
+    <div class="ef"><span class="lbl" data-t="source"></span>
+      <div class="seg" role="group"><button data-esrc="manual" data-t="src_manual"></button><button data-esrc="live" data-t="src_live"></button><button data-esrc="hist" data-t="src_hist"></button></div></div>
+    <div class="ef" id="edFromRow"><label class="lbl" for="edFrom" data-t="copyFrom"></label>
+      <select id="edFrom"><option value="current" data-t="from_current"></option><option value="example" data-t="from_example"></option><option value="slide" data-t="exSlide"></option></select></div>
+    <div class="btnrow"><button class="btn primary grow" id="edSave"></button><button class="btn" id="edCancel" data-t="cancel"></button></div>
+    <div class="btnrow"><button class="btn" id="edDup" data-t="duplicate"></button><button class="btn danger" id="edDel"></button></div>
+  </div>
+</section>
+
+<!-- INPUTS -->
+<section class="view" id="v-inputs">
+  <p class="lead" data-t="in_lead"></p>
+  <div class="card">
+    <h2 data-t="source"></h2>
+    <div class="seg" role="group"><button data-src="manual" data-t="src_manual"></button><button data-src="live" data-t="src_live"></button><button data-src="hist" data-t="src_hist"></button></div>
+    <p class="note" id="srcNote"></p>
+  </div>
+  <div class="btnrow">
+    <button class="btn grow" id="exReal" data-t="exReal"></button>
+    <button class="btn grow" id="exSlide" data-t="exSlide"></button>
+  </div>
+  <div id="inputsBody" style="display:grid;gap:14px"></div>
+  <button class="btn primary" data-go="display" data-t="seeResult"></button>
+</section>
+
+<!-- DISPLAY -->
+<section class="view" id="v-display">
+  <div class="card">
+    <div class="gauge-wrap">
+      <svg class="gauge" id="gauge" dir="ltr" viewBox="-14 0 328 172" role="img" aria-hidden="true">
+        <g id="gArcs"></g>
+        <g id="gTicks"></g>
+        <g class="needle" id="gNeedle" style="transform-origin:150px 150px">
+          <line x1="150" y1="150" x2="38" y2="150" stroke="var(--fg)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <circle cx="150" cy="150" r="9" fill="var(--fg)"/>
+        <circle cx="150" cy="150" r="4" fill="var(--panel)"/>
+      </svg>
+      <div class="bigread" id="dI">—<small>%</small></div>
+      <div class="statusTxt" id="dStatus">—</div>
+    </div>
+    <div class="leds" role="status" aria-live="polite" dir="ltr">
+      <div class="led u" id="ledU"><i></i><span data-t="lbl_u"></span></div>
+      <div class="led i" id="ledI"><i></i><span data-t="lbl_i"></span></div>
+      <div class="led o" id="ledO"><i></i><span data-t="lbl_o"></span></div>
+    </div>
+    <div class="note" id="dStd" style="text-align:center;max-width:none"></div>
+    <div class="note" id="dSrc" style="text-align:center;max-width:none"></div>
+  </div>
+  <div class="card">
+    <h2 data-t="velocities"></h2>
+    <div class="kv">
+      <div><div class="k" data-t="k_ve"></div><div class="v" id="ve">—</div></div>
+      <div><div class="k" data-t="k_vf"></div><div class="v" id="vf">—</div></div>
+      <div><div class="k" data-t="k_dv"></div><div class="v" id="dv">—</div></div>
+      <div><div class="k" data-t="k_bias"></div><div class="v" id="bias">—</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2 data-t="flowNozzle"></h2>
+    <canvas class="flowcv" id="flowD" dir="ltr" aria-hidden="true"></canvas>
+    <p class="note" data-t="flowNote"></p>
+  </div>
+  <div class="card whatif">
+    <h2 data-t="whatIf"></h2>
+    <label class="lbl" for="adj" id="adjLbl"></label>
+    <input type="range" id="adj" dir="ltr" min="40" max="180" step="1" value="100">
+    <div class="out"><span><span data-t="adjOut"></span> <b class="mono" id="adjQ">—</b> → <span class="ltr">I = <b class="mono" id="adjI">—</b></span></span><span class="pill" id="adjPill">—</span></div>
+    <div class="btnrow"><button class="btn" id="adjFit" data-t="fit100"></button><button class="btn primary grow" id="adjApply" data-t="apply"></button></div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section class="view" id="v-steps">
+  <div class="seg" role="group">
+    <button id="stOne" aria-pressed="true" data-t="oneAtTime"></button>
+    <button id="stAll" aria-pressed="false" data-t="allSteps"></button>
+  </div>
+  <div class="trendname" id="stepStack"></div>
+  <div class="card" id="stepOneBox">
+    <div class="dots" id="stepDots"></div>
+    <div class="step" id="stepCur"></div>
+    <div class="btnrow"><button class="btn grow" id="stPrev" data-t="prev"></button><button class="btn primary grow" id="stNext"></button></div>
+  </div>
+  <div class="card allsteps" id="stepAllBox" hidden></div>
+</section>
+
+<!-- NOZZLE -->
+<section class="view" id="v-nozzle">
+  <div class="card">
+    <h2 data-t="nz_h1"></h2>
+    <div class="kv">
+      <div><div class="k" data-t="nz_ideal"></div><div class="v" id="dReq">—</div></div>
+      <div><div class="k" data-t="nz_cur"></div><div class="v" id="dCur">—</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2 data-t="nz_h2"></h2>
+    <div class="kv">
+      <div><div class="k" data-t="nz_q100"></div><div class="v" id="qReq">—</div></div>
+      <div><div class="k" data-t="nz_win"></div><div class="v" id="qWin">—</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2 data-t="nz_h3"></h2>
+    <p class="note" data-t="nz_note"></p>
+    <div class="tbl"><table>
+      <thead><tr><th data-t="th_nz"></th><th data-t="th_res"></th><th data-t="th_st"></th><th data-t="th_q"></th><th></th></tr></thead>
+      <tbody id="nzRows"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- STANDARDS -->
+<section class="view" id="v-standards">
+  <p class="lead" data-t="std_lead"></p>
+  <div class="stdlist" id="stdList"></div>
+  <div class="custom" id="customBox" hidden>
+    <span class="lbl" data-t="n_custom"></span>
+    <span class="ltr" style="display:inline-flex;gap:8px;align-items:center"><input type="number" id="cLo" value="90" step="1" aria-label="min %"> – <input type="number" id="cHi" value="110" step="1" aria-label="max %"> %</span>
+  </div>
+  <p class="note" data-t="std_note"></p>
+</section>
+
+<!-- TRENDS -->
+<section class="view" id="v-trends">
+  <div class="seg" role="group">
+    <button id="vThis" aria-pressed="true" data-t="thisStack"></button>
+    <button id="vAll" aria-pressed="false" data-t="compareAll"></button>
+  </div>
+  <div id="thisBox" style="display:grid;gap:14px">
+    <div class="trendname" id="trendName"></div>
+    <div class="seg" role="group"><button data-src="manual" data-t="src_manual"></button><button data-src="live" data-t="src_live"></button><button data-src="hist" data-t="src_hist"></button></div>
+    <p class="note" id="manualNote" data-t="noLog"></p>
+    <div class="stats" id="stats"></div>
+    <div class="card">
+      <h2 data-t="isoPct"></h2>
+      <div class="legend"><span style="--c:var(--accent)" data-t="isoPct"></span><span style="--c:var(--ok)" data-t="band"></span></div>
+      <canvas class="chartcv" id="cIso" dir="ltr"></canvas>
+    </div>
+    <div class="card">
+      <h2 data-t="velocities"></h2>
+      <div class="legend"><span style="--c:var(--fg)" data-t="lg_ve"></span><span style="--c:var(--accent)" data-t="lg_vf"></span></div>
+      <canvas class="chartcv" id="cVel" dir="ltr"></canvas>
+    </div>
+  </div>
+  <div id="allBox" hidden style="display:grid;gap:14px">
+    <div class="card">
+      <h2 data-t="compareTitle"></h2>
+      <div class="legend" id="allLegend"></div>
+      <canvas class="chartcv" id="cAll" dir="ltr" style="height:260px"></canvas>
+      <p class="note" data-t="compareNote"></p>
+    </div>
+  </div>
+  <div class="btnrow" id="liveCtl"><button class="btn grow" id="pause"></button><button class="btn grow" id="copyCsv" data-t="copyLog"></button></div>
+  <div class="card" id="histBox" hidden>
+    <h2 data-t="histData"></h2>
+    <p class="note" data-t="histNote"></p>
+    <textarea id="csv" dir="ltr" spellcheck="false" aria-label="CSV"></textarea>
+    <input type="file" id="file" accept=".csv,text/csv,text/plain" aria-label="CSV">
+    <div class="btnrow"><button class="btn primary grow" id="plot" data-t="plot"></button><button class="btn grow" id="sample" data-t="sample"></button></div>
+    <p class="note" id="csvMsg"></p>
+  </div>
+  <p class="note" id="liveNote" data-t="liveNote"></p>
+</section>
+
+<!-- LEARN -->
+<section class="view" id="v-learn">
+  <div class="seg" role="group">
+    <button data-l="100" aria-pressed="true" data-t="lIso"></button>
+    <button data-l="160" aria-pressed="false" data-t="lOver"></button>
+    <button data-l="55" aria-pressed="false" data-t="lUnder"></button>
+  </div>
+  <div class="card">
+    <canvas class="flowcv" id="flowL" dir="ltr" style="height:220px" aria-hidden="true"></canvas>
+    <label class="lbl" for="lSlider" id="lLbl"></label>
+    <input type="range" id="lSlider" dir="ltr" min="40" max="180" value="100">
+  </div>
+  <div class="card explain" id="lText"></div>
+  <div class="card">
+    <h2 data-t="biasH"></h2>
+    <div class="bias">
+      <div><div class="k" data-t="biasK1"></div><div class="v" id="lBias">1.00</div></div>
+      <div><div class="k" data-t="biasK2"></div><div class="v" id="lErr">0%</div></div>
+    </div>
+    <p class="note" data-t="biasNote"></p>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="view" id="v-about">
+  <div class="card">
+    <h2>Airsens Isokinetic Monitor</h2>
+    <p class="note" data-t="ab_ver"></p>
+  </div>
+  <div class="card langcard">
+    <h2 data-t="language"></h2>
+    <div class="seg lang" role="group">
+      <button data-lang="en">English</button><button data-lang="fr">Français</button><button data-lang="ar">العربية</button>
+    </div>
+  </div>
+  <div class="card"><h2 data-t="method"></h2><p class="note" data-t="methodTxt"></p></div>
+  <div class="card"><h2 data-t="assume"></h2><p class="note" data-t="assumeTxt"></p></div>
+  <div class="card">
+    <h2 data-t="reset"></h2>
+    <div class="btnrow"><button class="btn danger" id="resetBtn"></button><button class="btn" id="resetNo" hidden data-t="cancel"></button></div>
+  </div>
+</section>
+
+</div>
+</main>
+
+<nav class="tabbar gut">
+  <div class="inner">
+    <button class="tab" data-go="home"><svg><use href="#i-home"/></svg><span data-t="tab_home"></span></button>
+    <button class="tab" data-go="stacks"><svg><use href="#i-stack"/></svg><span data-t="tab_stacks"></span></button>
+    <button class="tab" data-go="inputs"><svg><use href="#i-input"/></svg><span data-t="tab_inputs"></span></button>
+    <button class="tab" data-go="display"><svg><use href="#i-gauge"/></svg><span data-t="tab_display"></span></button>
+    <button class="tab" data-go="trends"><svg><use href="#i-trend"/></svg><span data-t="tab_trends"></span></button>
+  </div>
+</nav>
+<div class="toast" id="toast" style="opacity:0" aria-live="polite"></div>
+
+<script>
+/* ================= TRANSLATIONS ================= */
+const L="<span class='ltr'>", E="</span>";
+const T={
+en:{
+ t_stacks:"Stacks",t_stacks_s:"Name and monitor several stacks at once",tab_stacks:"Stacks",ov_lead:"All stacks are monitored at the same time. Tap a stack to make it active; Measurements, Display, Calculation and Trends then show that stack.",ovSum:"{n} stacks · {i} isokinetic · {a} need attention",monitorAll:"Monitor all stacks",addStack:"Add stack",stackName:"Stack name",location:"Location or notes",source:"Data source",src_manual:"Manual",src_live:"Real-time",src_hist:"Historical",copyFrom:"Start from",from_current:"Values of the active stack",from_example:"Example values",save:"Save",create:"Create",edit:"Edit",open:"Open",duplicate:"Duplicate",delete:"Delete",confirmDelete:"Tap again to delete",edTitleNew:"New stack",edTitleEdit:"Edit stack",updated:"updated {t}",lastRow:"last row {t}",manualEntry:"Manual entry",srcNote_manual:"Results are calculated from the values below.",srcNote_live:"Readings stream every second around the values below. Simulated until Airsens sensors are connected.",srcNote_hist:"Results use the latest row of this stack's CSV (Trends page). The values below fill any missing columns.",thisStack:"This stack",compareAll:"All stacks",compareTitle:"Isokinetic % – all stacks",compareNote:"Each line spans its own time range, oldest on the left. The dashed line is 100%. The active stack is drawn thicker.",noLog:"This stack uses manual entry, so there is no time series. Choose Real-time or Historical above.",defaultName:"Stack {n}",copySuffix:"copy",cantDeleteLast:"Keep at least one stack",toastAdded:"{name} added",toastDeleted:"{name} deleted",toastSaved:"Saved",
+ back:"Back",openDisplay:"Current isokinetic percentage, open display",language:"Language",
+ heroTitle:"Isokinetic Flow Monitor",
+ heroText:"Check that your stack sampling nozzle draws gas at the same velocity as the stack flow, so particle samples stay representative.",
+ t_inputs:"Measurements",t_inputs_s:"Stack and probe flow, size, temperature, pressure",
+ t_display:"Isokinetic display",t_display_s:"Dial, lamp and live flow view",
+ t_steps:"Calculation",t_steps_s:"Step-by-step working with your numbers",
+ t_nozzle:"Nozzle sizing",t_nozzle_s:"Pick the nozzle that hits 100%",
+ t_std:"Standards",t_std_s:"EPA, ISO and EN acceptance ranges",
+ t_trends:"Trends",t_trends_s:"Real-time and historical charts",
+ t_learn:"Learn",t_learn_s:"Iso, over and underkinetic explained",
+ t_about:"About",t_about_s:"Method, assumptions, reset",
+ tab_home:"Home",tab_inputs:"Inputs",tab_display:"Display",tab_trends:"Trends",tab_learn:"Learn",
+ in_lead:"Enter current or historical readings. Results update everywhere as you type and are kept on this device.",
+ exReal:"Load stack example",exSlide:"Load slide example",
+ g_geo:"Geometry",g_flow:"Flow rates",g_stack:"Stack conditions",g_meter:"Probe / flow-meter conditions",
+ f_ds:"Stack diameter",f_dn:"Sampling nozzle inlet diameter",f_qs:"Stack flow rate (actual)",f_qf:"Sampling probe flow rate",
+ f_ts:"Stack gas temperature",f_ps:"Stack absolute pressure",f_tm:"Gas temperature at meter",f_pm:"Absolute pressure at meter",
+ corr:`Correct probe flow from meter to stack conditions (ideal gas: ${L}Q<sub>f,s</sub> = Q<sub>f</sub> · T<sub>s</sub>/T<sub>m</sub> · P<sub>m</sub>/P<sub>s</sub>${E}). Moisture is not corrected.`,
+ seeResult:"See isokinetic result",
+ lbl_u:"Under",lbl_i:"Iso",lbl_o:"Over",
+ st_u:"Underkinetic",st_i:"Isokinetic",st_o:"Overkinetic",checkInputs:"Check inputs",
+ isIso:"{std}: {lo}–{hi}% is isokinetic",
+ velocities:"Velocities",k_ve:"Stack velocity V<sub>e</sub>",k_vf:"Nozzle velocity V<sub>f</sub>",k_dv:"Difference V<sub>f</sub> − V<sub>e</sub>",k_bias:"Large-particle bias",
+ underReads:"under-reads",overReads:"over-reads",none:"none",
+ flowNozzle:"Flow at the nozzle",
+ flowNote:"Lines are gas streamlines; dark dots are large particles that keep going straight. Watch how the gas captured by the nozzle widens or narrows with your result.",
+ whatIf:"What if I change the probe flow?",adjLbl:"Probe flow {p} of current",adjOut:"Probe flow",
+ fit100:"Set to 100%",apply:"Apply to measurements",toastFlow:"Probe flow updated",
+ oneAtTime:"One at a time",allSteps:"All steps",stepOf:"Step {i} of {n}",prev:"Previous",next:"Next step",seeRes:"See result",
+ s1t:"Cross-sectional areas",s1d:"Work out the flow area of the stack and of the nozzle opening.",
+ s2t:"Stack fluid velocity",s2d:"Divide the stack flow by the stack area.",
+ s3t:"Probe flow at stack conditions",s3d:"The meter sees gas at a different temperature and pressure. Convert it to stack conditions with the ideal gas law.",s3off:"Correction is switched off, so the meter flow is used as is.",
+ s4t:"Nozzle velocity",s4d:"Divide the corrected probe flow by the nozzle area.",
+ s5t:"Isokinetic percentage",s5d:"Compare nozzle velocity with stack velocity.",
+ s6t:"Classify",s6d:"Judge the result against {std}.",s6s:"Below {lo}% is underkinetic, above {hi}% is overkinetic",
+ s7t:"Nozzle sizing",s7d:"The nozzle diameter that would give exactly 100% at this probe flow.",
+ nz_h1:"For the current probe flow",nz_ideal:"Ideal nozzle diameter",nz_cur:"Current nozzle",
+ nz_h2:"For the current nozzle",nz_q100:"Probe flow for 100%",nz_win:"Acceptable probe flow window",
+ nz_h3:"Standard nozzle sizes",nz_note:"Isokinetic result each nozzle gives at the current probe flow. Green is the best fit inside the selected range. Tap Use to fit it.",
+ th_nz:"Nozzle",th_res:"Result",th_st:"Status",th_q:"Flow for 100%",use:"Use",toastNz:"Nozzle set to {mm} mm",
+ std_lead:"Choose the standard you are reporting against. The lamp, dial and charts use its range. Every standard is checked against your current result.",
+ sc_m5:"Particulate, stationary sources",sc_m17:"In-stack particulate filtration",sc_iso9096:"Particulate, high concentration",sc_en13284:"Dust, low concentration",sc_custom:"Your own limits",
+ n_custom:"Custom range",inside:"{x} pts inside",below:"{x} pts below",above:"{x} pts above",
+ std_note:"Ranges are the commonly cited isokinetic acceptance limits. Confirm against the current edition of each standard before reporting.",
+ live:"Real-time",hist:"Historical CSV",isoPct:"Isokinetic %",band:"Acceptance band",lg_ve:"Stack V<sub>e</sub>",lg_vf:"Nozzle V<sub>f</sub>",
+ pause:"Pause",resume:"Resume",copyLog:"Copy log as CSV",histData:"Historical data",
+ histNote:"Columns: <code>time, stack_flow, probe_flow</code>, optionally <code>stack_T, stack_P, meter_T, meter_P</code>, in the units set on Measurements.",
+ plot:"Plot data",sample:"Sample history",rows:"{n} rows plotted.",errHeader:"Add a header row and at least one data row.",errCols:"The header needs stack_flow and probe_flow columns.",
+ liveNote:"Real-time mode simulates readings drifting around your inputs, one per second, until the Airsens flow sensors are connected.",
+ samples:"Samples",meanI:"Mean I",minmax:"Min / max",within:"Within {lo}–{hi}%",noData:"No data yet",copied:"Log copied",
+ clipBlocked:"Clipboard blocked. The log is in the box above; copy it from there.",
+ lIso:"Isokinetic",lOver:"Overkinetic",lUnder:"Underkinetic",
+ lLbl:"Nozzle velocity V<sub>2</sub> = {p} of stack velocity V<sub>1</sub>",
+ L_i_t:"Isokinetic sampling",L_i:"Nozzle velocity equals stack velocity (V₂ = V₁). Streamlines run straight into the nozzle, so the gas and every particle size are sampled in their true proportions. This is the target condition.",
+ L_o_t:"Overkinetic sampling",L_o:"Nozzle velocity is higher than stack velocity (V₂ > V₁). The nozzle pulls gas from a wider area. Small particles follow the gas in, but large particles keep going straight past the nozzle, so the sample is diluted and large-particle concentration is under-estimated.",
+ L_u_t:"Underkinetic sampling",L_u:"Nozzle velocity is lower than stack velocity (V₂ < V₁). Gas spills around the nozzle, but large particles cannot turn and still enter, so they are concentrated in the sample and large-particle concentration is over-estimated.",
+ biasH:"Expected bias for large particles",biasK1:"Measured ÷ true concentration",biasK2:"Error",
+ biasNote:"For particles too heavy to follow the gas, the sampled concentration scales with V<sub>1</sub>/V<sub>2</sub>. Small particles follow the gas and show little bias.",
+ ab_ver:"Version 1.3. Calculates the isokinetic flow velocity percentage, the ratio of sampling nozzle velocity to stack fluid velocity, and judges it against stack-sampling standards.",
+ method:"Method",
+ methodTxt:`${L}V<sub>e</sub> = Q<sub>s</sub> ÷ (π D<sub>s</sub>²/4)${E}. The probe flow is corrected from meter to stack conditions with the ideal gas law, then ${L}V<sub>f</sub> = Q<sub>f,s</sub> ÷ (π d<sub>n</sub>²/4)${E}. ${L}I = V<sub>f</sub>/V<sub>e</sub> × 100${E}. EPA Method 5 accepts 90–110%.`,
+ assume:"Assumptions",assumeTxt:"Stack flow is entered at actual stack conditions. Moisture, gas molecular weight and pitot readings are not used. Real-time mode is simulated until sensors are connected.",
+ reset:"Reset",resetAll:"Reset all inputs",confirm:"Tap again to confirm",cancel:"Cancel",toastReset:"Inputs reset",
+ toastSlide:"Slide example loaded",toastStack:"Stack example loaded",cvStack:"V₁ stack",cvNozzle:"V₂ nozzle"
+},
+fr:{
+ t_stacks:"Cheminées",t_stacks_s:"Nommer et surveiller plusieurs cheminées à la fois",tab_stacks:"Cheminées",ov_lead:"Toutes les cheminées sont surveillées en même temps. Touchez une cheminée pour l'activer ; les pages Mesures, Affichage, Calcul et Tendances affichent alors cette cheminée.",ovSum:"{n} cheminées · {i} isocinétiques · {a} à surveiller",monitorAll:"Surveiller toutes les cheminées",addStack:"Ajouter une cheminée",stackName:"Nom de la cheminée",location:"Lieu ou remarques",source:"Source des données",src_manual:"Manuel",src_live:"Temps réel",src_hist:"Historique",copyFrom:"Partir de",from_current:"Valeurs de la cheminée active",from_example:"Valeurs d'exemple",save:"Enregistrer",create:"Créer",edit:"Modifier",open:"Ouvrir",duplicate:"Dupliquer",delete:"Supprimer",confirmDelete:"Touchez encore pour supprimer",edTitleNew:"Nouvelle cheminée",edTitleEdit:"Modifier la cheminée",updated:"mis à jour {t}",lastRow:"dernière ligne {t}",manualEntry:"Saisie manuelle",srcNote_manual:"Les résultats sont calculés à partir des valeurs ci-dessous.",srcNote_live:"Les relevés arrivent chaque seconde autour des valeurs ci-dessous. Simulés en attendant la connexion des capteurs Airsens.",srcNote_hist:"Les résultats utilisent la dernière ligne du CSV de cette cheminée (page Tendances). Les valeurs ci-dessous complètent les colonnes manquantes.",thisStack:"Cette cheminée",compareAll:"Toutes",compareTitle:"% isocinétique – toutes les cheminées",compareNote:"Chaque courbe couvre sa propre période, la plus ancienne à gauche. Pointillés : 100 %. La cheminée active est en trait épais.",noLog:"Cette cheminée est en saisie manuelle : pas de série temporelle. Choisissez Temps réel ou Historique ci-dessus.",defaultName:"Cheminée {n}",copySuffix:"copie",cantDeleteLast:"Gardez au moins une cheminée",toastAdded:"{name} ajoutée",toastDeleted:"{name} supprimée",toastSaved:"Enregistré",
+ back:"Retour",openDisplay:"Pourcentage isocinétique actuel, ouvrir l'affichage",language:"Langue",
+ heroTitle:"Moniteur de débit isocinétique",
+ heroText:"Vérifiez que la buse de prélèvement aspire le gaz à la même vitesse que l'écoulement dans la cheminée, pour des échantillons de particules représentatifs.",
+ t_inputs:"Mesures",t_inputs_s:"Débits, diamètres, température et pression",
+ t_display:"Affichage isocinétique",t_display_s:"Cadran, voyant et flux en direct",
+ t_steps:"Calcul",t_steps_s:"Calcul détaillé avec vos valeurs",
+ t_nozzle:"Choix de la buse",t_nozzle_s:"Trouver la buse qui donne 100 %",
+ t_std:"Normes",t_std_s:"Plages d'acceptation EPA, ISO et EN",
+ t_trends:"Tendances",t_trends_s:"Graphiques en temps réel et historiques",
+ t_learn:"Comprendre",t_learn_s:"Iso, sur et sous-isocinétique expliqués",
+ t_about:"À propos",t_about_s:"Méthode, hypothèses, réinitialisation",
+ tab_home:"Accueil",tab_inputs:"Saisie",tab_display:"Écran",tab_trends:"Courbes",tab_learn:"Guide",
+ in_lead:"Saisissez des relevés actuels ou historiques. Les résultats se mettent à jour partout pendant la saisie et sont conservés sur cet appareil.",
+ exReal:"Exemple cheminée",exSlide:"Exemple de la présentation",
+ g_geo:"Géométrie",g_flow:"Débits",g_stack:"Conditions en cheminée",g_meter:"Conditions sonde / débitmètre",
+ f_ds:"Diamètre de la cheminée",f_dn:"Diamètre d'entrée de la buse",f_qs:"Débit de la cheminée (réel)",f_qf:"Débit de la sonde de prélèvement",
+ f_ts:"Température du gaz en cheminée",f_ps:"Pression absolue en cheminée",f_tm:"Température du gaz au compteur",f_pm:"Pression absolue au compteur",
+ corr:`Corriger le débit de la sonde des conditions du compteur aux conditions de la cheminée (gaz parfait : ${L}Q<sub>f,s</sub> = Q<sub>f</sub> · T<sub>s</sub>/T<sub>m</sub> · P<sub>m</sub>/P<sub>s</sub>${E}). L'humidité n'est pas corrigée.`,
+ seeResult:"Voir le résultat isocinétique",
+ lbl_u:"Sous",lbl_i:"Iso",lbl_o:"Sur",
+ st_u:"Sous-isocinétique",st_i:"Isocinétique",st_o:"Sur-isocinétique",checkInputs:"Vérifiez les saisies",
+ isIso:"{std} : {lo}–{hi} % = isocinétique",
+ velocities:"Vitesses",k_ve:"Vitesse en cheminée V<sub>e</sub>",k_vf:"Vitesse dans la buse V<sub>f</sub>",k_dv:"Écart V<sub>f</sub> − V<sub>e</sub>",k_bias:"Biais grosses particules",
+ underReads:"sous-estime",overReads:"surestime",none:"aucun",
+ flowNozzle:"Écoulement à la buse",
+ flowNote:"Les lignes sont les lignes de courant du gaz ; les points foncés sont de grosses particules qui vont tout droit. La zone captée par la buse s'élargit ou se rétrécit selon votre résultat.",
+ whatIf:"Et si je modifie le débit de la sonde ?",adjLbl:"Débit sonde : {p} de l'actuel",adjOut:"Débit sonde",
+ fit100:"Régler à 100 %",apply:"Appliquer aux mesures",toastFlow:"Débit de la sonde mis à jour",
+ oneAtTime:"Une à la fois",allSteps:"Toutes les étapes",stepOf:"Étape {i} sur {n}",prev:"Précédent",next:"Étape suivante",seeRes:"Voir le résultat",
+ s1t:"Sections de passage",s1d:"Calculez la section de la cheminée et celle de l'ouverture de la buse.",
+ s2t:"Vitesse du fluide en cheminée",s2d:"Divisez le débit de la cheminée par sa section.",
+ s3t:"Débit sonde aux conditions de la cheminée",s3d:"Le compteur mesure le gaz à une autre température et pression. Ramenez-le aux conditions de la cheminée avec la loi des gaz parfaits.",s3off:"La correction est désactivée : le débit du compteur est utilisé tel quel.",
+ s4t:"Vitesse dans la buse",s4d:"Divisez le débit corrigé par la section de la buse.",
+ s5t:"Pourcentage isocinétique",s5d:"Comparez la vitesse dans la buse à celle de la cheminée.",
+ s6t:"Classement",s6d:"Évaluez le résultat selon {std}.",s6s:"Sous {lo} % : sous-isocinétique ; au-dessus de {hi} % : sur-isocinétique",
+ s7t:"Dimensionnement de la buse",s7d:"Le diamètre de buse qui donnerait exactement 100 % à ce débit.",
+ nz_h1:"Pour le débit sonde actuel",nz_ideal:"Diamètre de buse idéal",nz_cur:"Buse actuelle",
+ nz_h2:"Pour la buse actuelle",nz_q100:"Débit pour 100 %",nz_win:"Plage de débit acceptable",
+ nz_h3:"Tailles de buse standard",nz_note:"Résultat obtenu avec chaque buse au débit actuel. En vert : la meilleure dans la plage choisie. Touchez Utiliser pour l'appliquer.",
+ th_nz:"Buse",th_res:"Résultat",th_st:"État",th_q:"Débit pour 100 %",use:"Utiliser",toastNz:"Buse réglée sur {mm} mm",
+ std_lead:"Choisissez la norme de référence. Le voyant, le cadran et les graphiques utilisent sa plage. Chaque norme est vérifiée avec votre résultat actuel.",
+ sc_m5:"Particules, sources fixes",sc_m17:"Filtration des particules en cheminée",sc_iso9096:"Particules, forte concentration",sc_en13284:"Poussières, faible concentration",sc_custom:"Vos propres limites",
+ n_custom:"Plage personnalisée",inside:"{x} pts à l'intérieur",below:"{x} pts en dessous",above:"{x} pts au-dessus",
+ std_note:"Ces plages sont les limites d'acceptation couramment citées. Vérifiez l'édition en vigueur de chaque norme avant tout rapport.",
+ live:"Temps réel",hist:"Historique CSV",isoPct:"% isocinétique",band:"Plage d'acceptation",lg_ve:"Cheminée V<sub>e</sub>",lg_vf:"Buse V<sub>f</sub>",
+ pause:"Pause",resume:"Reprendre",copyLog:"Copier le journal (CSV)",histData:"Données historiques",
+ histNote:"Colonnes : <code>time, stack_flow, probe_flow</code>, en option <code>stack_T, stack_P, meter_T, meter_P</code>, dans les unités choisies dans Mesures.",
+ plot:"Tracer",sample:"Exemple d'historique",rows:"{n} lignes tracées.",errHeader:"Ajoutez une ligne d'en-tête et au moins une ligne de données.",errCols:"L'en-tête doit contenir les colonnes stack_flow et probe_flow.",
+ liveNote:"Le mode temps réel simule des relevés autour de vos valeurs, un par seconde, en attendant la connexion des capteurs de débit Airsens.",
+ samples:"Mesures",meanI:"I moyen",minmax:"Min / max",within:"Dans {lo}–{hi} %",noData:"Pas encore de données",copied:"Journal copié",
+ clipBlocked:"Presse-papiers bloqué. Le journal est dans la zone ci-dessus ; copiez-le depuis là.",
+ lIso:"Iso",lOver:"Sur",lUnder:"Sous",
+ lLbl:"Vitesse buse V<sub>2</sub> = {p} de la vitesse cheminée V<sub>1</sub>",
+ L_i_t:"Prélèvement isocinétique",L_i:"La vitesse dans la buse égale celle de la cheminée (V₂ = V₁). Les lignes de courant entrent droit dans la buse : le gaz et toutes les tailles de particules sont prélevés dans leurs vraies proportions. C'est la condition visée.",
+ L_o_t:"Prélèvement sur-isocinétique",L_o:"La vitesse dans la buse dépasse celle de la cheminée (V₂ > V₁). La buse aspire le gaz sur une zone plus large. Les fines particules suivent le gaz, mais les grosses continuent tout droit à côté de la buse : l'échantillon est dilué et la concentration en grosses particules est sous-estimée.",
+ L_u_t:"Prélèvement sous-isocinétique",L_u:"La vitesse dans la buse est inférieure à celle de la cheminée (V₂ < V₁). Le gaz contourne la buse, mais les grosses particules ne peuvent pas dévier et y entrent quand même : elles sont concentrées dans l'échantillon et leur concentration est surestimée.",
+ biasH:"Biais attendu pour les grosses particules",biasK1:"Concentration mesurée ÷ réelle",biasK2:"Erreur",
+ biasNote:"Pour les particules trop lourdes pour suivre le gaz, la concentration prélevée varie comme V<sub>1</sub>/V<sub>2</sub>. Les fines particules suivent le gaz et sont peu biaisées.",
+ ab_ver:"Version 1.3. Calcule le pourcentage de vitesse isocinétique, rapport entre la vitesse dans la buse et celle du fluide en cheminée, et le compare aux normes de prélèvement à l'émission.",
+ method:"Méthode",
+ methodTxt:`${L}V<sub>e</sub> = Q<sub>s</sub> ÷ (π D<sub>s</sub>²/4)${E}. Le débit de la sonde est ramené aux conditions de la cheminée avec la loi des gaz parfaits, puis ${L}V<sub>f</sub> = Q<sub>f,s</sub> ÷ (π d<sub>n</sub>²/4)${E}. ${L}I = V<sub>f</sub>/V<sub>e</sub> × 100${E}. La méthode EPA 5 accepte 90–110 %.`,
+ assume:"Hypothèses",assumeTxt:"Le débit de la cheminée est saisi aux conditions réelles. L'humidité, la masse molaire du gaz et les mesures Pitot ne sont pas utilisées. Le mode temps réel est simulé tant que les capteurs ne sont pas connectés.",
+ reset:"Réinitialisation",resetAll:"Réinitialiser toutes les saisies",confirm:"Touchez encore pour confirmer",cancel:"Annuler",toastReset:"Saisies réinitialisées",
+ toastSlide:"Exemple de la présentation chargé",toastStack:"Exemple cheminée chargé",cvStack:"V₁ cheminée",cvNozzle:"V₂ buse"
+},
+ar:{
+ t_stacks:"المداخن",t_stacks_s:"تسمية ومراقبة عدة مداخن في آن واحد",tab_stacks:"المداخن",ov_lead:"تتم مراقبة جميع المداخن في الوقت نفسه. اضغط على مدخنة لتفعيلها، فتعرض صفحات القياسات والعرض والحساب والاتجاهات تلك المدخنة.",ovSum:"{n} مداخن · {i} متساوية الحركة · {a} تحتاج انتباهاً",monitorAll:"مراقبة كل المداخن",addStack:"إضافة مدخنة",stackName:"اسم المدخنة",location:"الموقع أو ملاحظات",source:"مصدر البيانات",src_manual:"يدوي",src_live:"لحظي",src_hist:"تاريخي",copyFrom:"البدء من",from_current:"قيم المدخنة النشطة",from_example:"قيم المثال",save:"حفظ",create:"إنشاء",edit:"تعديل",open:"فتح",duplicate:"نسخ",delete:"حذف",confirmDelete:"اضغط مرة أخرى للحذف",edTitleNew:"مدخنة جديدة",edTitleEdit:"تعديل المدخنة",updated:"آخر تحديث {t}",lastRow:"آخر صف {t}",manualEntry:"إدخال يدوي",srcNote_manual:"تُحسب النتائج من القيم أدناه.",srcNote_live:"تصل القراءات كل ثانية حول القيم أدناه. وهي محاكاة إلى أن يتم توصيل حساسات Airsens.",srcNote_hist:"تعتمد النتائج على آخر صف في ملف CSV لهذه المدخنة (صفحة الاتجاهات). تُكمل القيم أدناه أي أعمدة ناقصة.",thisStack:"هذه المدخنة",compareAll:"كل المداخن",compareTitle:"نسبة تساوي الحركة – كل المداخن",compareNote:"يغطي كل خط فترته الزمنية الخاصة، الأقدم على اليسار. الخط المتقطع يمثل 100%. المدخنة النشطة مرسومة بخط أعرض.",noLog:"تستخدم هذه المدخنة الإدخال اليدوي، لذا لا توجد سلسلة زمنية. اختر «لحظي» أو «تاريخي» أعلاه.",defaultName:"مدخنة {n}",copySuffix:"نسخة",cantDeleteLast:"يجب الإبقاء على مدخنة واحدة على الأقل",toastAdded:"تمت إضافة {name}",toastDeleted:"تم حذف {name}",toastSaved:"تم الحفظ",
+ back:"رجوع",openDisplay:"النسبة الحالية، فتح شاشة العرض",language:"اللغة",
+ heroTitle:"مراقب التدفق متساوي الحركة",
+ heroText:"تحقّق من أن فوهة أخذ العينات تسحب الغاز بنفس سرعة التدفق في المدخنة، لتبقى عينات الجسيمات ممثِّلة.",
+ t_inputs:"القياسات",t_inputs_s:"التدفق والأقطار ودرجة الحرارة والضغط",
+ t_display:"عرض تساوي الحركة",t_display_s:"المؤشر والمصباح وعرض التدفق المباشر",
+ t_steps:"الحساب",t_steps_s:"الحساب خطوة بخطوة بقيمك",
+ t_nozzle:"اختيار الفوهة",t_nozzle_s:"اختر الفوهة التي تعطي 100%",
+ t_std:"المعايير",t_std_s:"نطاقات القبول EPA وISO وEN",
+ t_trends:"الاتجاهات",t_trends_s:"رسوم بيانية لحظية وتاريخية",
+ t_learn:"تعلّم",t_learn_s:"شرح الحالات المتساوية والأعلى والأدنى",
+ t_about:"حول",t_about_s:"الطريقة والافتراضات وإعادة الضبط",
+ tab_home:"الرئيسية",tab_inputs:"المدخلات",tab_display:"العرض",tab_trends:"الاتجاهات",tab_learn:"تعلّم",
+ in_lead:"أدخل القراءات الحالية أو التاريخية. تتحدّث النتائج في كل الصفحات أثناء الكتابة وتُحفظ على هذا الجهاز.",
+ exReal:"تحميل مثال مدخنة",exSlide:"تحميل مثال العرض التقديمي",
+ g_geo:"الأبعاد",g_flow:"معدلات التدفق",g_stack:"ظروف المدخنة",g_meter:"ظروف المسبار / عداد التدفق",
+ f_ds:"قطر المدخنة",f_dn:"قطر مدخل فوهة أخذ العينات",f_qs:"معدل تدفق المدخنة (الفعلي)",f_qf:"معدل تدفق مسبار العينات",
+ f_ts:"درجة حرارة غاز المدخنة",f_ps:"الضغط المطلق في المدخنة",f_tm:"درجة حرارة الغاز عند العداد",f_pm:"الضغط المطلق عند العداد",
+ corr:`تصحيح تدفق المسبار من ظروف العداد إلى ظروف المدخنة (الغاز المثالي: ${L}Q<sub>f,s</sub> = Q<sub>f</sub> · T<sub>s</sub>/T<sub>m</sub> · P<sub>m</sub>/P<sub>s</sub>${E}). لا يتم تصحيح الرطوبة.`,
+ seeResult:"عرض نتيجة تساوي الحركة",
+ lbl_u:"أدنى",lbl_i:"متساوٍ",lbl_o:"أعلى",
+ st_u:"دون متساوي الحركة",st_i:"متساوي الحركة",st_o:"فوق متساوي الحركة",checkInputs:"تحقّق من المدخلات",
+ isIso:"{std}: النطاق {lo}–{hi}% يُعدّ متساوي الحركة",
+ velocities:"السرعات",k_ve:"سرعة المدخنة V<sub>e</sub>",k_vf:"سرعة الفوهة V<sub>f</sub>",k_dv:"الفرق V<sub>f</sub> − V<sub>e</sub>",k_bias:"انحياز الجسيمات الكبيرة",
+ underReads:"قراءة أقل",overReads:"قراءة أعلى",none:"لا يوجد",
+ flowNozzle:"التدفق عند الفوهة",
+ flowNote:"الخطوط هي خطوط انسياب الغاز، والنقاط الداكنة جسيمات كبيرة تستمر في خط مستقيم. لاحظ كيف تتسع أو تضيق منطقة الغاز التي تلتقطها الفوهة حسب نتيجتك.",
+ whatIf:"ماذا لو غيّرت تدفق المسبار؟",adjLbl:"تدفق المسبار {p} من القيمة الحالية",adjOut:"تدفق المسبار",
+ fit100:"اضبط على 100%",apply:"تطبيق على القياسات",toastFlow:"تم تحديث تدفق المسبار",
+ oneAtTime:"خطوة واحدة",allSteps:"كل الخطوات",stepOf:"الخطوة {i} من {n}",prev:"السابق",next:"الخطوة التالية",seeRes:"عرض النتيجة",
+ s1t:"مساحات المقطع العرضي",s1d:"احسب مساحة مقطع المدخنة ومساحة فتحة الفوهة.",
+ s2t:"سرعة المائع في المدخنة",s2d:"اقسم تدفق المدخنة على مساحة مقطعها.",
+ s3t:"تدفق المسبار في ظروف المدخنة",s3d:"يقيس العداد الغاز عند درجة حرارة وضغط مختلفين. حوّله إلى ظروف المدخنة باستخدام قانون الغاز المثالي.",s3off:"التصحيح متوقف، لذا يُستخدم تدفق العداد كما هو.",
+ s4t:"سرعة الفوهة",s4d:"اقسم تدفق المسبار المصحّح على مساحة الفوهة.",
+ s5t:"نسبة تساوي الحركة",s5d:"قارن سرعة الفوهة بسرعة المدخنة.",
+ s6t:"التصنيف",s6d:"قيّم النتيجة وفق {std}.",s6s:"أقل من {lo}% دون متساوي الحركة، وأعلى من {hi}% فوق متساوي الحركة",
+ s7t:"تحديد قطر الفوهة",s7d:"قطر الفوهة الذي يعطي 100% تماماً عند هذا التدفق.",
+ nz_h1:"لتدفق المسبار الحالي",nz_ideal:"القطر المثالي للفوهة",nz_cur:"الفوهة الحالية",
+ nz_h2:"للفوهة الحالية",nz_q100:"التدفق اللازم لـ 100%",nz_win:"نطاق التدفق المقبول",
+ nz_h3:"أقطار الفوهات القياسية",nz_note:"النتيجة التي تعطيها كل فوهة عند التدفق الحالي. الأخضر هو الأنسب ضمن النطاق المختار. اضغط «استخدام» لتطبيقها.",
+ th_nz:"الفوهة",th_res:"النتيجة",th_st:"الحالة",th_q:"التدفق لـ 100%",use:"استخدام",toastNz:"تم ضبط الفوهة على {mm} مم",
+ std_lead:"اختر المعيار الذي تعتمده. يستخدم المصباح والمؤشر والرسوم نطاقه، وتُفحص نتيجتك الحالية مقابل كل معيار.",
+ sc_m5:"الجسيمات، المصادر الثابتة",sc_m17:"ترشيح الجسيمات داخل المدخنة",sc_iso9096:"الجسيمات، تركيز مرتفع",sc_en13284:"الغبار، تركيز منخفض",sc_custom:"حدودك الخاصة",
+ n_custom:"نطاق مخصّص",inside:"داخل النطاق بـ {x} نقطة",below:"أدنى بـ {x} نقطة",above:"أعلى بـ {x} نقطة",
+ std_note:"هذه النطاقات هي حدود القبول الشائعة. تحقّق من الإصدار الحالي لكل معيار قبل إعداد التقارير.",
+ live:"لحظي",hist:"بيانات CSV تاريخية",isoPct:"نسبة تساوي الحركة %",band:"نطاق القبول",lg_ve:"المدخنة V<sub>e</sub>",lg_vf:"الفوهة V<sub>f</sub>",
+ pause:"إيقاف مؤقت",resume:"استئناف",copyLog:"نسخ السجل بصيغة CSV",histData:"البيانات التاريخية",
+ histNote:"الأعمدة: <code>time, stack_flow, probe_flow</code>، واختيارياً <code>stack_T, stack_P, meter_T, meter_P</code>، بالوحدات المحددة في صفحة القياسات.",
+ plot:"ارسم البيانات",sample:"مثال تاريخي",rows:"تم رسم {n} صفاً.",errHeader:"أضف صف عناوين وصف بيانات واحداً على الأقل.",errCols:"يجب أن يحتوي صف العناوين على العمودين stack_flow و probe_flow.",
+ liveNote:"يحاكي الوضع اللحظي قراءات تتذبذب حول مدخلاتك، قراءة كل ثانية، إلى أن يتم توصيل حساسات التدفق من Airsens.",
+ samples:"العينات",meanI:"متوسط I",minmax:"الأدنى / الأعلى",within:"ضمن {lo}–{hi}%",noData:"لا توجد بيانات بعد",copied:"تم نسخ السجل",
+ clipBlocked:"الحافظة محظورة. السجل موجود في المربع أعلاه، انسخه من هناك.",
+ lIso:"متساوٍ",lOver:"أعلى",lUnder:"أدنى",
+ lLbl:"سرعة الفوهة V<sub>2</sub> = {p} من سرعة المدخنة V<sub>1</sub>",
+ L_i_t:"أخذ عينات متساوي الحركة",L_i:"سرعة الفوهة تساوي سرعة المدخنة (V₂ = V₁). تدخل خطوط الانسياب مباشرة إلى الفوهة، فيُؤخذ الغاز وجميع أحجام الجسيمات بنسبها الحقيقية. هذه هي الحالة المطلوبة.",
+ L_o_t:"أخذ عينات فوق متساوي الحركة",L_o:"سرعة الفوهة أعلى من سرعة المدخنة (V₂ > V₁). تسحب الفوهة الغاز من مساحة أوسع. تتبع الجسيمات الصغيرة الغاز، لكن الجسيمات الكبيرة تستمر في خط مستقيم متجاوزة الفوهة، فتُخفَّف العينة ويُقدَّر تركيز الجسيمات الكبيرة بأقل من قيمته.",
+ L_u_t:"أخذ عينات دون متساوي الحركة",L_u:"سرعة الفوهة أقل من سرعة المدخنة (V₂ < V₁). يلتف الغاز حول الفوهة، لكن الجسيمات الكبيرة لا تستطيع الانعطاف فتدخلها، فتتركز في العينة ويُقدَّر تركيزها بأكثر من قيمته.",
+ biasH:"الانحياز المتوقع للجسيمات الكبيرة",biasK1:"التركيز المقاس ÷ الحقيقي",biasK2:"الخطأ",
+ biasNote:"بالنسبة للجسيمات الأثقل من أن تتبع الغاز، يتناسب التركيز المقاس مع V<sub>1</sub>/V<sub>2</sub>. أما الجسيمات الصغيرة فتتبع الغاز وانحيازها ضئيل.",
+ ab_ver:"الإصدار 1.3. يحسب نسبة سرعة تساوي الحركة، أي نسبة سرعة فوهة أخذ العينات إلى سرعة المائع في المدخنة، ويقارنها بمعايير أخذ العينات من المداخن.",
+ method:"الطريقة",
+ methodTxt:`${L}V<sub>e</sub> = Q<sub>s</sub> ÷ (π D<sub>s</sub>²/4)${E}. يُصحَّح تدفق المسبار من ظروف العداد إلى ظروف المدخنة بقانون الغاز المثالي، ثم ${L}V<sub>f</sub> = Q<sub>f,s</sub> ÷ (π d<sub>n</sub>²/4)${E}. ${L}I = V<sub>f</sub>/V<sub>e</sub> × 100${E}. تقبل طريقة EPA 5 النطاق 90–110%.`,
+ assume:"الافتراضات",assumeTxt:"يُدخل تدفق المدخنة في ظروفها الفعلية. لا تُستخدم الرطوبة ولا الوزن الجزيئي للغاز ولا قراءات أنبوب بيتو. الوضع اللحظي محاكى إلى أن يتم توصيل الحساسات.",
+ reset:"إعادة الضبط",resetAll:"إعادة ضبط كل المدخلات",confirm:"اضغط مرة أخرى للتأكيد",cancel:"إلغاء",toastReset:"تمت إعادة ضبط المدخلات",
+ toastSlide:"تم تحميل مثال العرض",toastStack:"تم تحميل مثال المدخنة",cvStack:"V₁ المدخنة",cvNozzle:"V₂ الفوهة"
+}};
+let lang="en";
+function t(k,v){let s=(T[lang]&&T[lang][k])??T.en[k]??k;if(v)for(const [a,b] of Object.entries(v))s=s.split("{"+a+"}").join(b);return s;}
+
+/* ================= DATA ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const U={
+ len:{mm:.001,cm:.01,m:1,in:.0254},
+ flow:{"m³/s":1,"m³/min":1/60,"m³/h":1/3600,"m³/d":1/86400,"L/min":1/60000,"ACFM":0.000471947},
+ temp:{"°C":0,"K":0,"°F":0},
+ pres:{kPa:1,Pa:.001,mbar:.1,atm:101.325,inHg:3.38639}
+};
+const STD=[
+ {id:"m5",n:"US EPA Method 5",lo:90,hi:110},
+ {id:"m17",n:"US EPA Method 17",lo:90,hi:110},
+ {id:"iso9096",n:"ISO 9096:2017",lo:95,hi:115},
+ {id:"en13284",n:"EN 13284-1:2017",lo:95,hi:115},
+ {id:"custom",n:null,lo:90,hi:110}
+];
+const stdName=s=>s.n||t("n_custom");
+const GROUPS=[
+ {t:"g_geo",f:[["ds","len","Dₛ"],["dn","len","dₙ"]]},
+ {t:"g_flow",f:[["qs","flow","Qₛ"],["qf","flow","Q_f"]]},
+ {t:"g_stack",f:[["ts","temp","Tₛ"],["ps","pres","Pₛ"]]},
+ {t:"g_meter",f:[["tm","temp","Tₘ"],["pm","pres","Pₘ"]]}
+];
+const FIELD_IDS=GROUPS.flatMap(g=>g.f.map(f=>f[0]));
+const EX_SLIDE={ds:10.16,dsU:"cm",dn:22,dnU:"cm",qs:2011,qsU:"m³/d",qf:264,qfU:"m³/d",ts:25,tsU:"°C",ps:101.325,psU:"kPa",tm:25,tmU:"°C",pm:101.325,pmU:"kPa"};
+const EX_REAL={ds:600,dsU:"mm",dn:8,dnU:"mm",qs:12000,qsU:"m³/h",qf:25,qfU:"L/min",ts:140,tsU:"°C",ps:99.8,psU:"kPa",tm:20,tmU:"°C",pm:98.5,pmU:"kPa"};
+const EX_KILN={ds:1.2,dsU:"m",dn:10,dnU:"mm",qs:36000,qsU:"m³/h",qf:33,qfU:"L/min",ts:180,tsU:"°C",ps:100.5,psU:"kPa",tm:22,tmU:"°C",pm:99,pmU:"kPa"};
+const EX_INC={ds:0.8,dsU:"m",dn:6,dnU:"mm",qs:9000,qsU:"m³/h",qf:5.1,qfU:"L/min",ts:220,tsU:"°C",ps:100,psU:"kPa",tm:20,tmU:"°C",pm:98,pmU:"kPa"};
+const LBL=c=>t("st_"+c);
+
+/* ---- build input form ---- */
+$("inputsBody").innerHTML=GROUPS.map(g=>`<div class="card"><h2 data-t="${g.t}"></h2>${g.f.map(([id,k,sym])=>
+ `<div class="field"><label for="${id}"><span data-t="f_${id}"></span><em>${sym}</em></label><input type="number" inputmode="decimal" step="any" id="${id}"><select id="${id}U" dir="ltr">${Object.keys(U[k]).map(u=>`<option>${u}</option>`).join("")}</select></div>`).join("")}${g.t==="g_meter"?`<label class="chk"><input type="checkbox" id="corr" checked><span data-t="corr"></span></label>`:""}</div>`).join("");
+
+/* ---- maths ---- */
+const toM=(v,u)=>v*U.len[u], toQ=(v,u)=>v*U.flow[u], fromQ=(v,u)=>v/U.flow[u], toP=(v,u)=>v*U.pres[u];
+const toK=(v,u)=>u==="K"?v:u==="°F"?(v-32)*5/9+273.15:v+273.15;
+const sig=x=>{if(!isFinite(x))return"—";const a=Math.abs(x);return x.toFixed(a>=1000?0:a>=100?1:a>=10?2:a>=1?3:4)};
+const fmt=(x,d=4)=>!isFinite(x)?"—":(Math.abs(x)<1e-3&&x!==0)||Math.abs(x)>=1e5?x.toExponential(3):(+x.toPrecision(d)).toString();
+const classify=(I,s)=>!isFinite(I)?null:I<s.lo?"u":I>s.hi?"o":"i";
+function readFrom(o){
+ const g=k=>parseFloat(o[k]), u=k=>o[k+"U"];
+ return {Ds:toM(g("ds"),u("ds")),dn:toM(g("dn"),u("dn")),Qs:toQ(g("qs"),u("qs")),Qf:toQ(g("qf"),u("qf")),
+  Ts:toK(g("ts"),u("ts")),Ps:toP(g("ps"),u("ps")),Tm:toK(g("tm"),u("tm")),Pm:toP(g("pm"),u("pm")),corr:o.corr!==false};
+}
+function calc(x){
+ const As=Math.PI*x.Ds**2/4, An=Math.PI*x.dn**2/4;
+ const k=x.corr?(x.Ts/x.Tm)*(x.Pm/x.Ps):1;
+ const QfS=x.Qf*k, Ve=x.Qs/As, Vf=QfS/An, I=Vf/Ve*100;
+ return {As,An,k,QfS,Ve,Vf,I,QfReq:Ve*An/k,dReq:Math.sqrt(4*(QfS/Ve)/Math.PI)};
+}
+
+/* ================= STACKS ================= */
+let stacks=[], activeId=null, paused=false;
+const uid=()=>Math.random().toString(36).slice(2,9);
+function newStack(name,inputs,src,std){return {id:uid(),name,loc:"",src:src||"manual",std:std||"m5",cLo:90,cHi:110,inputs:{...EX_REAL,corr:true,...inputs},csv:"",log:[],sim:null,err:"",external:false};}
+const act=()=>stacks.find(s=>s.id===activeId)||stacks[0];
+const colorOf=st=>`var(--c${stacks.indexOf(st)%6+1})`;
+function stdOf(st){const s={...(STD.find(x=>x.id===st.std)||STD[0])};if(s.id==="custom"){s.lo=+st.cLo||0;s.hi=+st.cHi||0;}return s;}
+const std=()=>stdOf(act());
+const base=st=>readFrom(st.inputs);
+const reading=st=>st.src!=="manual"&&st.log.length?st.log[st.log.length-1].x:base(st);
+function resultOf(st){const x=reading(st),r=calc(x),s=stdOf(st);return {x,r,s,c:classify(r.I,s)};}
+const nowLabel=()=>new Date().toTimeString().slice(0,8);
+function push(st,tm,x){const r=calc(x);st.log.push({t:tm,x,Ve:r.Ve,Vf:r.Vf,I:r.I});if(st.src==="live"&&st.log.length>180)st.log.shift();}
+function simTick(st,label){
+ const b=base(st); if(!st.sim)st.sim={a:1,b:1,ph:Math.random()*6};const m=st.sim;
+ m.ph+=.06; m.a+=(Math.random()-.5)*.012+(1-m.a)*.04; m.b+=(Math.random()-.5)*.016+(1-m.b)*.05;
+ push(st,label||nowLabel(),{...b,Qs:b.Qs*m.a*(1+.05*Math.sin(m.ph)),Qf:b.Qf*m.b,Ts:b.Ts+3*Math.sin(m.ph*.7)});
+}
+function sampleCSVfor(st){
+ const o=st.inputs,qs=+o.qs,qf=+o.qf,ts=+o.ts,ps=+o.ps;let out="time,stack_flow,probe_flow,stack_T,stack_P\n";
+ for(let i=0;i<60;i++){const tm=`${String(8+Math.floor(i/6)).padStart(2,"0")}:${String(i%6*10).padStart(2,"0")}`;
+  const a=1+.08*Math.sin(i/7)+(Math.random()-.5)*.04,f=i>24&&i<34?.86:1+(Math.random()-.5)*.05;
+  out+=`${tm},${(qs*a).toPrecision(5)},${(qf*f).toPrecision(4)},${(ts+4*Math.sin(i/9)).toFixed(1)},${ps}\n`;}
+ return out;
+}
+function parseCSVinto(st,txt){
+ const lines=txt.trim().split(/\r?\n/).filter(l=>l.trim());if(lines.length<2)throw new Error(t("errHeader"));
+ const h=lines[0].split(/[,;\t]/).map(s=>s.trim().toLowerCase()),ix=n=>h.indexOf(n);
+ if(ix("stack_flow")<0||ix("probe_flow")<0)throw new Error(t("errCols"));
+ const b=base(st),u=k=>st.inputs[k+"U"];st.log=[];
+ for(const l of lines.slice(1)){const c=l.split(/[,;\t]/).map(s=>s.trim()),num=n=>ix(n)>=0&&c[ix(n)]!==""?parseFloat(c[ix(n)]):NaN;
+  const x={...b,Qs:toQ(num("stack_flow"),u("qs")),Qf:toQ(num("probe_flow"),u("qf"))};
+  if(isFinite(num("stack_t")))x.Ts=toK(num("stack_t"),u("ts"));if(isFinite(num("stack_p")))x.Ps=toP(num("stack_p"),u("ps"));
+  if(isFinite(num("meter_t")))x.Tm=toK(num("meter_t"),u("tm"));if(isFinite(num("meter_p")))x.Pm=toP(num("meter_p"),u("pm"));
+  push(st,ix("time")>=0?c[ix("time")]:String(st.log.length+1),x);}
+}
+function loadHist(st){if(!st.csv)st.csv=sampleCSVfor(st);try{parseCSVinto(st,st.csv);st.err="";}catch(e){st.err=e.message;st.log=[];}}
+function prepare(st){st.sim=null;st.log=[];st.external=false;
+ if(st.src==="live"){for(let i=0;i<40;i++)simTick(st,"−"+(40-i)+"s");}
+ else if(st.src==="hist")loadHist(st);}
+
+/* ---- persistence ---- */
+const KEY2="airsens-iso-v2", KEY1="airsens-iso-v1";
+function save(){try{localStorage.setItem(KEY2,JSON.stringify({lang,activeId,stacks:stacks.map(s=>({id:s.id,name:s.name,loc:s.loc,src:s.src,std:s.std,cLo:s.cLo,cHi:s.cHi,inputs:s.inputs,csv:s.src==="hist"?s.csv:""}))}));}catch(e){}}
+function seed(){
+ const a=newStack("Boiler A",EX_REAL,"live","m5"); a.loc="Example";
+ const b=newStack("Kiln B",EX_KILN,"live","en13284"); b.loc="Example";
+ const c=newStack("Incinerator C",EX_INC,"hist","iso9096"); c.loc="Example";
+ stacks=[a,b,c]; activeId=a.id;
+}
+function load(){
+ let d=null;try{d=JSON.parse(localStorage.getItem(KEY2)||"null");}catch(e){}
+ if(d&&Array.isArray(d.stacks)&&d.stacks.length){stacks=d.stacks.map(s=>({...newStack(s.name,s.inputs,s.src,s.std),...s,log:[],sim:null,err:"",external:false}));activeId=d.activeId;return d.lang;}
+ let o=null;try{o=JSON.parse(localStorage.getItem(KEY1)||"null");}catch(e){}
+ if(o){const inp={};for(const id of FIELD_IDS){if(o[id]!=null)inp[id]=o[id];if(o[id+"U"])inp[id+"U"]=o[id+"U"];}inp.corr=o.corr!==false;
+  const s=newStack("Stack 1",inp,"live",o.stdId||"m5");stacks=[s];activeId=s.id;return o.lang;}
+ seed();return null;
+}
+
+/* ---- editor DOM <-> active stack ---- */
+function setVals(o){for(const [k,v] of Object.entries(o)){const e=$(k);if(!e||!("value" in e))continue;if(e.type==="checkbox")e.checked=v;else e.value=v;}}
+function loadEditor(){const s=act();setVals(EX_REAL);setVals(s.inputs);$("corr").checked=s.inputs.corr!==false;$("cLo").value=s.cLo;$("cHi").value=s.cHi;}
+function storeEditor(){const s=act(),o={};for(const id of FIELD_IDS){o[id]=$(id).value;o[id+"U"]=$(id+"U").value;}o.corr=$("corr").checked;s.inputs=o;s.cLo=$("cLo").value;s.cHi=$("cHi").value;}
+
+/* ---- gauge ---- */
+const GC={x:150,y:150,r:118};
+const ang=v=>Math.PI*(1-(Math.max(50,Math.min(150,v))-50)/100);
+const pt=(v,r=GC.r)=>[GC.x+r*Math.cos(ang(v)),GC.y-r*Math.sin(ang(v))];
+function arc(a,b,col){if(b<=a)return"";const [x1,y1]=pt(a),[x2,y2]=pt(b);return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${GC.r} ${GC.r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${col}" stroke-width="18" fill="none"/>`;}
+function drawGauge(s){
+ const lo=Math.max(50,Math.min(150,s.lo)),hi=Math.max(50,Math.min(150,s.hi));
+ $("gArcs").innerHTML=arc(50,lo,"var(--warn)")+arc(lo,hi,"var(--ok)")+arc(hi,150,"var(--bad)");
+ let h="";for(const v of [50,75,100,125,150]){const [a,b]=pt(v,GC.r-12),[c,d]=pt(v,GC.r+12),[lx,ly]=pt(v,GC.r+24);
+  h+=`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="var(--panel)" stroke-width="2"/><text x="${lx}" y="${ly+4}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">${v}</text>`;}
+ for(const v of [lo,hi]){const [lx,ly]=pt(v,GC.r-30);h+=`<text x="${lx}" y="${ly+4}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" fill="var(--ok)">${v}</text>`;}
+ $("gTicks").innerHTML=h;
+}
+
+/* ---- render active stack ---- */
+let R={}, X={};
+const sc=c=>c?"s-"+c:"";
+function setState(el,c){el.classList.remove("s-i","s-u","s-o");if(c)el.classList.add("s-"+c);}
+function srcLine(st){const last=st.log[st.log.length-1];
+ return st.src==="manual"?t("manualEntry"):st.src==="live"?t("src_live")+" · "+t("updated",{t:last?last.t:"—"}):t("src_hist")+" · "+t("lastRow",{t:last?last.t:"—"});}
+function render(){
+ const st=act(), s=stdOf(st); $("customBox").hidden=s.id!=="custom";
+ X=reading(st); R=calc(X); const c=classify(R.I,s), Itxt=isFinite(R.I)?R.I.toFixed(1):"—";
+ setState($("chip"),c); $("chipTxt").textContent=Itxt+"%";
+ setState($("homeStatus"),c); $("homeI").textContent=Itxt+"%";
+ $("homeSub").innerHTML=`<b>${esc(st.name)}</b> · `+(c?LBL(c):t("checkInputs"))+" · <bdi>"+stdName(s)+" "+s.lo+"–"+s.hi+"%</bdi>";
+ drawGauge(s);
+ $("gNeedle").style.transform=`rotate(${((Math.max(45,Math.min(155,isFinite(R.I)?R.I:50))-50)/100*180).toFixed(2)}deg)`;
+ $("dI").innerHTML=`${Itxt}<small>%</small>`;
+ const stx=$("dStatus"); stx.textContent=c?LBL(c):t("checkInputs"); setState(stx,c);
+ for(const [id,k] of [["ledU","u"],["ledI","i"],["ledO","o"]])$(id).classList.toggle("on",c===k);
+ $("dStd").innerHTML=t("isIso",{std:"<bdi>"+stdName(s)+"</bdi>",lo:s.lo,hi:s.hi});
+ $("dSrc").innerHTML=`<b>${esc(st.name)}</b> · ${srcLine(st)}`;
+ $("ve").innerHTML=`${sig(R.Ve)} <small>m/s</small>`; $("vf").innerHTML=`${sig(R.Vf)} <small>m/s</small>`;
+ $("dv").innerHTML=`${isFinite(R.Vf)?(R.Vf>=R.Ve?"+":"")+sig(R.Vf-R.Ve):"—"} <small>m/s</small>`;
+ $("bias").innerHTML=isFinite(R.I)&&R.I>0?`×${(100/R.I).toFixed(2)} <small>${R.I>100?t("underReads"):R.I<100?t("overReads"):t("none")}</small>`:"—";
+ updateAdj();
+ const lu=st.inputs.dnU, qu=st.inputs.qfU;
+ $("dReq").innerHTML=`${sig(R.dReq/U.len[lu])} <small>${lu}</small>`;
+ $("dCur").innerHTML=`${esc(st.inputs.dn)||"—"} <small>${lu}</small>`;
+ $("qReq").innerHTML=`${sig(fromQ(R.QfReq,qu))} <small>${qu}</small>`;
+ $("qWin").innerHTML=`${sig(fromQ(R.QfReq*s.lo/100,qu))} – ${sig(fromQ(R.QfReq*s.hi/100,qu))} <small>${qu}</small>`;
+ const sizes=[3,4,5,6,7,8,9,10,11,12,14,16].map(mm=>{const An=Math.PI*(mm/1000)**2/4,I=R.QfS/An/R.Ve*100;return{mm,I,c:classify(I,s),q:fromQ(R.Ve*An/R.k,qu)}});
+ const inb=sizes.filter(z=>z.c==="i"); const best=inb.length?inb.reduce((a,b)=>Math.abs(a.I-100)<Math.abs(b.I-100)?a:b):null;
+ const curmm=X.dn*1000;
+ $("nzRows").innerHTML=sizes.map(z=>`<tr class="${z===best?"best":""} ${Math.abs(z.mm-curmm)<1e-6?"cur":""}"><td class="num">${z.mm} mm</td><td class="num">${isFinite(z.I)?z.I.toFixed(1)+"%":"—"}</td><td>${z.c?`<span class="pill s-${z.c}">${LBL(z.c)}</span>`:"—"}</td><td class="num">${sig(z.q)} ${qu}</td><td><button class="linkbtn" data-mm="${z.mm}">${t("use")}</button></td></tr>`).join("");
+ $("stdList").innerHTML=STD.map(z0=>{const z=stdOf({...st,std:z0.id});const k=classify(R.I,z);const m=!isFinite(R.I)?"":k==="i"?t("inside",{x:Math.min(R.I-z.lo,z.hi-R.I).toFixed(1)}):k==="u"?t("below",{x:(z.lo-R.I).toFixed(1)}):t("above",{x:(R.I-z.hi).toFixed(1)});
+  return `<label class="stdopt ${z.id===st.std?"sel":""}"><input type="radio" name="std" value="${z.id}" ${z.id===st.std?"checked":""}><span><b>${stdName(z)}</b><small>${t("sc_"+z.id)}</small><span class="rng">${z.lo}–${z.hi}%</span></span><span class="right">${k?`<span class="pill s-${k}">${LBL(k)}</span>`:""}<small>${m}</small></span></label>`}).join("");
+ buildSteps(s,c); renderSteps();
+ updateLive();
+ if(cur==="trends")drawAll();
+}
+function commit(){render();save();}
+
+/* ---- multi-stack views: structure ---- */
+function renderGrid(){
+ $("stackGrid").innerHTML=stacks.map(st=>`<article class="scard" data-card="${st.id}" tabindex="0">
+  <header><span class="swatch" style="background:${colorOf(st)}"></span><div class="sname"><b>${esc(st.name)}</b><small>${esc(st.loc||"")}</small></div><span class="badge ${st.src}">${t("src_"+st.src)}</span></header>
+  <div class="srow"><span class="lamp"></span><span class="big" data-f="i">—</span><span class="pill" data-f="pill">—</span></div>
+  <canvas class="spark" data-spark="${st.id}" dir="ltr" aria-hidden="true"></canvas>
+  <div class="smeta"><span class="ltr" data-f="v"></span><span data-f="when"></span></div>
+  <div class="sbtns"><button class="linkbtn" data-edit="${st.id}">${t("edit")}</button><button class="linkbtn primary" data-open="${st.id}">${t("open")}</button></div>
+ </article>`).join("");
+ $("strip").innerHTML=stacks.map(st=>`<button class="schip ${st.id===activeId?"on":""}" data-stack="${st.id}"><i></i><span>${esc(st.name)}</span><b class="ltr" data-f="i">—</b></button>`).join("")+`<button class="schip add" data-go="stacks" aria-label="${t("t_stacks")}">＋</button>`;
+ $("homeList").innerHTML=stacks.map(st=>`<button class="hrow" data-stack="${st.id}" data-then="display"><span class="dot"></span><span class="hname"><b>${esc(st.name)}</b><small>${t("src_"+st.src)}</small></span><span class="ltr mono" data-f="i">—</span></button>`).join("");
+ updateLive();
+}
+/* ---- multi-stack views: values (every tick) ---- */
+function updateLive(){
+ let nI=0,nA=0;
+ for(const st of stacks){
+  const {r,s,c}=resultOf(st), I=isFinite(r.I)?r.I.toFixed(1)+"%":"—";
+  if(c==="i")nI++;else nA++;
+  const card=document.querySelector(`[data-card="${st.id}"]`);
+  if(card){setState(card,c);card.classList.toggle("on",st.id===activeId);
+   card.querySelector('[data-f="i"]').textContent=I;
+   const p=card.querySelector('[data-f="pill"]');p.textContent=c?LBL(c):"—";p.className="pill "+sc(c);
+   card.querySelector('[data-f="v"]').textContent=`Vₑ ${sig(r.Ve)} · V_f ${sig(r.Vf)} m/s`;
+   card.querySelector('[data-f="when"]').textContent=st.src==="manual"?t("manualEntry"):srcLine(st).split(" · ").pop();
+   if(cur==="stacks")spark(card.querySelector("canvas"),st,s);}
+  const chip=document.querySelector(`.schip[data-stack="${st.id}"]`);
+  if(chip){setState(chip,c);chip.classList.toggle("on",st.id===activeId);chip.querySelector('[data-f="i"]').textContent=I;}
+  const row=document.querySelector(`.hrow[data-stack="${st.id}"]`);
+  if(row){setState(row,c);row.querySelector('[data-f="i"]').textContent=I;}
+ }
+ $("ovSum").textContent=t("ovSum",{n:stacks.length,i:nI,a:nA});
+ $("homeSum").textContent=t("ovSum",{n:stacks.length,i:nI,a:nA});
+}
+function spark(cv,st,s){
+ const w=cv.clientWidth,h=cv.clientHeight;if(!w)return;const dpr=window.devicePixelRatio||1;
+ cv.width=w*dpr;cv.height=h*dpr;const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+ const data=st.log.slice(-90).map(d=>d.I).filter(isFinite);
+ if(!data.length){g.fillStyle=css("--muted");g.font="12px Barlow,'IBM Plex Sans Arabic',sans-serif";g.fillText(st.src==="manual"?t("manualEntry"):t("noData"),4,h/2+4);return;}
+ let lo=Math.min(...data,s.lo),hi=Math.max(...data,s.hi);const pad=(hi-lo)*.1||5;lo-=pad;hi+=pad;
+ const Y=v=>h-2-(v-lo)/(hi-lo)*(h-4),Xp=i=>data.length<2?w/2:i/(data.length-1)*(w-6);
+ g.fillStyle=css("--ok-soft");g.fillRect(0,Y(s.hi),w,Y(s.lo)-Y(s.hi));
+ const c=classify(data[data.length-1],s),col=css(c==="i"?"--ok":c==="u"?"--warn":"--bad");
+ g.beginPath();data.forEach((v,i)=>i?g.lineTo(Xp(i),Y(v)):g.moveTo(Xp(i),Y(v)));
+ g.strokeStyle=col;g.lineWidth=1.8;g.stroke();
+ g.lineTo(Xp(data.length-1),h);g.lineTo(0,h);g.closePath();g.globalAlpha=.08;g.fillStyle=col;g.fill();g.globalAlpha=1;
+ g.fillStyle=col;g.beginPath();g.arc(Xp(data.length-1),Y(data[data.length-1]),3,0,7);g.fill();
+}
+
+/* ---- live engine: all real-time stacks tick together ---- */
+setInterval(()=>{if(paused)return;let any=false;
+ for(const st of stacks)if(st.src==="live"&&!st.external){simTick(st);any=true;}
+ if(any)onTick();},1000);
+function onTick(){if(act().src==="live")render();else{updateLive();if(cur==="trends")drawAll();}}
+/* hook for real sensors: airsensPush("Boiler A", {stack_flow, probe_flow, stack_T, stack_P, meter_T, meter_P, time}) in the units set for that stack */
+window.airsensPush=(key,d)=>{const st=stacks.find(s=>s.id===key||s.name===key);if(!st||!d)return false;
+ const b=base(st),u=k=>st.inputs[k+"U"],x={...b};
+ if(d.stack_flow!=null)x.Qs=toQ(+d.stack_flow,u("qs"));if(d.probe_flow!=null)x.Qf=toQ(+d.probe_flow,u("qf"));
+ if(d.stack_T!=null)x.Ts=toK(+d.stack_T,u("ts"));if(d.stack_P!=null)x.Ps=toP(+d.stack_P,u("ps"));
+ if(d.meter_T!=null)x.Tm=toK(+d.meter_T,u("tm"));if(d.meter_P!=null)x.Pm=toP(+d.meter_P,u("pm"));
+ if(!st.external){st.src="live";st.external=true;st.log=[];renderGrid();}
+ push(st,d.time||nowLabel(),x);onTick();return true;};
+
+/* ---- active stack, source ---- */
+function setActive(id){if(!stacks.some(s=>s.id===id))return;activeId=id;loadEditor();stepIdx=0;$("adj").value=100;updateSrcUI();render();save();}
+function setSource(src){const st=act();if(st.src===src)return;st.src=src;prepare(st);updateSrcUI();renderGrid();commit();}
+function updateSrcUI(){
+ const st=act();
+ document.querySelectorAll("[data-src]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.src===st.src));
+ $("srcNote").textContent=t("srcNote_"+st.src);
+ $("histBox").hidden=st.src!=="hist"||trendView!=="this";
+ $("liveCtl").hidden=st.src!=="live";
+ $("liveNote").hidden=st.src!=="live";
+ $("manualNote").hidden=st.src!=="manual"||trendView!=="this";
+ $("csv").value=st.csv||"";
+ $("csvMsg").textContent=st.src==="hist"?(st.err||t("rows",{n:st.log.length})):"";
+ $("trendName").textContent=st.name;
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-src]");if(b)setSource(b.dataset.src);});
+
+/* ---- what-if ---- */
+function updateAdj(){
+ const f=+$("adj").value/100, I=R.I*f, c=classify(I,std()), qu=act().inputs.qfU;
+ $("adjLbl").innerHTML=t("adjLbl",{p:`<span class="ltr">${Math.round(f*100)}%</span>`});
+ $("adjQ").textContent=`${sig(fromQ(X.Qf*f,qu))} ${qu}`;
+ $("adjI").textContent=isFinite(I)?I.toFixed(1)+"%":"—";
+ const p=$("adjPill"); p.textContent=c?LBL(c):"—"; p.className="pill "+sc(c);
+}
+$("adj").oninput=updateAdj;
+$("adjFit").onclick=()=>{if(isFinite(R.I)&&R.I>0){$("adj").value=Math.max(40,Math.min(180,Math.round(10000/R.I)));updateAdj();}};
+$("adjApply").onclick=()=>{const f=+$("adj").value/100,st=act();
+ const q=fromQ(X.Qf*f,st.inputs.qfU);$("qf").value=+q.toPrecision(4);$("adj").value=100;storeEditor();
+ if(st.src==="hist")loadHist(st);commit();toast(t("toastFlow"));};
+
+/* ---- steps ---- */
+let STEPS=[], stepIdx=0, stepAll=false;
+function buildSteps(s,c){
+ STEPS=[
+  {t:"s1t",d:t("s1d"),f:"A = π · D² / 4",s:`Aₛ = π × ${fmt(X.Ds)}² / 4 · Aₙ = π × ${fmt(X.dn)}² / 4`,r:`Aₛ = ${fmt(R.As)} m² · Aₙ = ${fmt(R.An)} m²`},
+  {t:"s2t",d:t("s2d"),f:"Vₑ = Qₛ / Aₛ",s:`Vₑ = ${fmt(X.Qs)} m³/s ÷ ${fmt(R.As)} m²`,r:`Vₑ = ${sig(R.Ve)} m/s`},
+  {t:"s3t",d:X.corr?t("s3d"):t("s3off"),f:X.corr?"Q_f,s = Q_f · (Tₛ/Tₘ) · (Pₘ/Pₛ)":"Q_f,s = Q_f",
+   s:X.corr?`${fmt(X.Qf)} × (${fmt(X.Ts)}/${fmt(X.Tm)}) × (${fmt(X.Pm)}/${fmt(X.Ps)})`:`${fmt(X.Qf)} m³/s`,r:`Q_f,s = ${fmt(R.QfS)} m³/s`},
+  {t:"s4t",d:t("s4d"),f:"V_f = Q_f,s / Aₙ",s:`V_f = ${fmt(R.QfS)} ÷ ${fmt(R.An)}`,r:`V_f = ${sig(R.Vf)} m/s`},
+  {t:"s5t",d:t("s5d"),f:"I = V_f / Vₑ × 100",s:`I = ${sig(R.Vf)} ÷ ${sig(R.Ve)} × 100`,r:`I = ${isFinite(R.I)?R.I.toFixed(2):"—"} %`},
+  {t:"s6t",d:t("s6d",{std:stdName(s)}),f:`${s.lo}% ≤ I ≤ ${s.hi}%`,s:t("s6s",{lo:s.lo,hi:s.hi}),r:c?LBL(c):"—",c,word:true},
+  {t:"s7t",d:t("s7d"),f:"dₙ,req = √(4 · Q_f,s / (π · Vₑ))",s:`√(4 × ${fmt(R.QfS)} / (π × ${sig(R.Ve)}))`,r:`dₙ,req = ${sig(R.dReq*1000)} mm`}
+ ];
+}
+function stepHTML(x,i){return `<div class="step"><div class="n">${t("stepOf",{i:i+1,n:STEPS.length})}</div><h3>${t(x.t)}</h3><p>${x.d}</p><div class="formula">${x.f}</div><div class="subst" ${x.word?'style="direction:inherit;font-family:var(--f-body)"':""}>${x.s}</div><div class="result ${x.word?"word":""}" ${x.c?`style="color:var(--${x.c==="i"?"ok":x.c==="u"?"warn":"bad"})"`:""}>${x.r}</div></div>`}
+function renderSteps(){
+ if(cur!=="steps"&&STEPS.length&&$("stepCur").innerHTML)return renderStepsLite();
+ $("stepOneBox").hidden=stepAll; $("stepAllBox").hidden=!stepAll;
+ $("stOne").setAttribute("aria-pressed",!stepAll); $("stAll").setAttribute("aria-pressed",stepAll);
+ $("stepDots").innerHTML=STEPS.map((_,i)=>`<button class="${i===stepIdx?"on":i<stepIdx?"done":""}" data-step="${i}" aria-label="${i+1}">${i+1}</button>`).join("");
+ $("stepCur").innerHTML=stepHTML(STEPS[stepIdx],stepIdx);
+ $("stPrev").disabled=stepIdx===0; $("stNext").textContent=stepIdx===STEPS.length-1?t("seeRes"):t("next");
+ $("stepAllBox").innerHTML=STEPS.map(stepHTML).join("");
+ $("stepStack").textContent=act().name;
+}
+function renderStepsLite(){$("stepCur").innerHTML=stepHTML(STEPS[stepIdx],stepIdx);$("stepAllBox").innerHTML=STEPS.map(stepHTML).join("");$("stepStack").textContent=act().name;}
+$("stPrev").onclick=()=>{if(stepIdx>0){stepIdx--;renderSteps();}};
+$("stNext").onclick=()=>{if(stepIdx<STEPS.length-1){stepIdx++;renderSteps();}else go("display");};
+$("stepDots").onclick=e=>{const b=e.target.closest("[data-step]");if(b){stepIdx=+b.dataset.step;renderSteps();}};
+$("stOne").onclick=()=>{stepAll=false;renderSteps()}; $("stAll").onclick=()=>{stepAll=true;renderSteps()};
+
+/* ---- nozzle & standards ---- */
+$("nzRows").onclick=e=>{const b=e.target.closest("[data-mm]");if(!b)return;const u=$("dnU").value;$("dn").value=+(b.dataset.mm/1000/U.len[u]).toPrecision(4);storeEditor();const st=act();if(st.src==="hist")loadHist(st);commit();toast(t("toastNz",{mm:b.dataset.mm}));};
+$("stdList").onchange=e=>{if(e.target.name==="std"){act().std=e.target.value;commit();}};
+
+/* ---- stack editor ---- */
+let editingId=null, delArmed=false, edSrc="live";
+function openEditor(id){
+ editingId=id||null; delArmed=false;
+ const st=id?stacks.find(s=>s.id===id):null;
+ $("edTitle").textContent=st?t("edTitleEdit"):t("edTitleNew");
+ $("edName").value=st?st.name:t("defaultName",{n:stacks.length+1});
+ $("edLoc").value=st?st.loc:"";
+ edSrc=st?st.src:"live"; markEdSrc();
+ $("edFromRow").hidden=!!st; $("edDup").hidden=!st; $("edDel").hidden=!st;
+ $("edDel").textContent=t("delete"); $("edSave").textContent=st?t("save"):t("create");
+ $("editor").hidden=false; $("addBtn").hidden=true;
+ $("editor").scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>$("edName").focus(),300);
+}
+function closeEditor(){$("editor").hidden=true;$("addBtn").hidden=false;editingId=null;}
+function markEdSrc(){document.querySelectorAll("[data-esrc]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.esrc===edSrc));}
+document.querySelectorAll("[data-esrc]").forEach(b=>b.onclick=()=>{edSrc=b.dataset.esrc;markEdSrc();});
+$("addBtn").onclick=()=>openEditor(null);
+$("edCancel").onclick=closeEditor;
+$("edSave").onclick=()=>{
+ const name=$("edName").value.trim()||t("defaultName",{n:stacks.length+1}), loc=$("edLoc").value.trim();
+ if(editingId){const st=stacks.find(s=>s.id===editingId);st.name=name;st.loc=loc;if(st.src!==edSrc){st.src=edSrc;prepare(st);}toast(t("toastSaved"));}
+ else{const from=$("edFrom").value, cur0=act();
+  const inputs=from==="current"?{...cur0.inputs}:from==="slide"?{...EX_SLIDE,corr:true}:{...EX_REAL,corr:true};
+  const st=newStack(name,inputs,edSrc,cur0.std);st.loc=loc;stacks.push(st);prepare(st);activeId=st.id;loadEditor();toast(t("toastAdded",{name}));}
+ closeEditor();renderGrid();updateSrcUI();commit();
+};
+$("edDup").onclick=()=>{const st=stacks.find(s=>s.id===editingId);if(!st)return;
+ const c=newStack(`${st.name} (${t("copySuffix")})`,{...st.inputs},st.src,st.std);c.loc=st.loc;c.cLo=st.cLo;c.cHi=st.cHi;c.csv=st.csv;
+ stacks.splice(stacks.indexOf(st)+1,0,c);prepare(c);closeEditor();renderGrid();commit();toast(t("toastAdded",{name:c.name}));};
+$("edDel").onclick=()=>{const st=stacks.find(s=>s.id===editingId);if(!st)return;
+ if(stacks.length===1){toast(t("cantDeleteLast"));return;}
+ if(!delArmed){delArmed=true;$("edDel").textContent=t("confirmDelete");return;}
+ stacks=stacks.filter(s=>s!==st);if(activeId===st.id){activeId=stacks[0].id;loadEditor();}
+ closeEditor();renderGrid();updateSrcUI();commit();toast(t("toastDeleted",{name:st.name}));};
+$("stackGrid").onclick=e=>{
+ const ed=e.target.closest("[data-edit]");if(ed){openEditor(ed.dataset.edit);return;}
+ const card=e.target.closest("[data-card]");if(card){setActive(card.dataset.card);go("display");}
+};
+$("stackGrid").onkeydown=e=>{if(e.key==="Enter"){const card=e.target.closest("[data-card]");if(card){setActive(card.dataset.card);go("display");}}};
+
+/* ---- navigation ---- */
+const TITLES={home:null,stacks:"t_stacks",inputs:"t_inputs",display:"t_display",steps:"t_steps",nozzle:"t_nozzle",standards:"t_std",trends:"t_trends",learn:"t_learn",about:"t_about"};
+const STACK_PAGES=["inputs","display","steps","nozzle","standards","trends"];
+let cur="home", navDepth=0;
+function setTitle(){$("title").innerHTML=TITLES[cur]?t(TITLES[cur]):`<span class="logo" dir="ltr"><svg><use href="#i-logo"/></svg>Airsens</span>`;}
+function show(v){
+ if(!(v in TITLES))v="home"; cur=v;
+ document.querySelectorAll(".view").forEach(s=>s.classList.toggle("active",s.id==="v-"+v));
+ setTitle();
+ $("stackBar").hidden=!STACK_PAGES.includes(v);
+ $("backBtn").style.visibility=v==="home"?"hidden":"visible";
+ document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.go===v));
+ window.scrollTo(0,0);
+ if(v==="steps")renderSteps();
+ requestAnimationFrame(()=>{if(v==="trends")drawAll();if(v==="stacks")updateLive();
+  const on=document.querySelector(".schip.on");if(on&&!$("stackBar").hidden)on.scrollIntoView({inline:"center",block:"nearest"});});
+}
+function go(v){if(v===cur)return;navDepth++;location.hash=v;}
+window.addEventListener("hashchange",()=>show(location.hash.slice(1)));
+document.addEventListener("click",e=>{
+ const sw=e.target.closest("[data-stack]");if(sw){setActive(sw.dataset.stack);if(sw.dataset.then)go(sw.dataset.then);return;}
+ const b=e.target.closest("[data-go]");if(b){e.preventDefault();go(b.dataset.go);return;}
+ const l=e.target.closest("[data-lang]");if(l){setLang(l.dataset.lang);closeLang();return;}
+ if(!e.target.closest("#langMenu,#langBtn"))closeLang();
+});
+$("chip").onclick=()=>go("display");
+$("backBtn").onclick=()=>{if(navDepth>0){navDepth--;history.back();}else{location.hash="home";}};
+
+/* ---- language ---- */
+function openLang(){$("langMenu").hidden=false;$("langBtn").setAttribute("aria-expanded","true");}
+function closeLang(){$("langMenu").hidden=true;$("langBtn").setAttribute("aria-expanded","false");}
+$("langBtn").onclick=e=>{e.stopPropagation();$("langMenu").hidden?openLang():closeLang();};
+function applyStatic(){
+ document.querySelectorAll("[data-t]").forEach(e=>e.innerHTML=t(e.dataset.t));
+ document.querySelectorAll("[data-ta]").forEach(e=>e.setAttribute("aria-label",t(e.dataset.ta)));
+ document.querySelectorAll("[data-tp]").forEach(e=>e.setAttribute("placeholder",t(e.dataset.tp)));
+ document.querySelectorAll("[data-lang]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lang===lang));
+ $("langCode").textContent=lang==="ar"?"ع":lang.toUpperCase();
+ $("pause").textContent=paused?t("resume"):t("pause");
+ $("resetBtn").textContent=resetArmed?t("confirm"):t("resetAll");
+}
+function setLang(l){
+ if(!T[l])l="en"; lang=l;
+ const html=document.documentElement; html.lang=l; html.dir=l==="ar"?"rtl":"ltr";
+ applyStatic(); setTitle(); renderGrid(); updateSrcUI(); render(); setLearn(learnI); save();
+}
+
+/* ---- toast ---- */
+let tt;function toast(m){const el=$("toast");el.textContent=m;el.style.opacity=1;clearTimeout(tt);tt=setTimeout(()=>el.style.opacity=0,1700);}
+
+/* ---- inputs / examples / reset ---- */
+let resetArmed=false;
+function inputsChanged(){storeEditor();const st=act();if(st.src==="hist")loadHist(st);updateSrcUI();commit();}
+document.querySelectorAll("#v-inputs input,#v-inputs select,#cLo,#cHi").forEach(e=>{e.addEventListener("input",inputsChanged);e.addEventListener("change",inputsChanged)});
+$("exSlide").onclick=()=>{setVals(EX_SLIDE);storeEditor();prepare(act());updateSrcUI();commit();toast(t("toastSlide"));};
+$("exReal").onclick=()=>{setVals(EX_REAL);storeEditor();prepare(act());updateSrcUI();commit();toast(t("toastStack"));};
+$("resetBtn").onclick=()=>{if(!resetArmed){resetArmed=true;$("resetBtn").textContent=t("confirm");$("resetNo").hidden=false;return;}
+ resetArmed=false;$("resetBtn").textContent=t("resetAll");$("resetNo").hidden=true;
+ seed();stacks.forEach(prepare);loadEditor();renderGrid();updateSrcUI();commit();toast(t("toastReset"));};
+$("resetNo").onclick=()=>{resetArmed=false;$("resetBtn").textContent=t("resetAll");$("resetNo").hidden=true;};
+
+/* ---- flow animation ---- */
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function mkParts(n){const a=[];for(let i=0;i<n;i++)a.push({x:Math.random(),y:Math.random()*2-1,k:Math.random()<.4?.92:0});return a;}
+const FLOW={flowD:{p:mkParts(70)},flowL:{p:mkParts(80)}};
+function sstep(x){x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)}
+function drawFlow(id,I){
+ const cv=$(id),w=cv.clientWidth,h=cv.clientHeight;if(!w)return;const dpr=window.devicePixelRatio||1;
+ if(cv.width!==Math.round(w*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+ const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+ const yc=h/2,H=h/2-10,rn=h*.17,wt=7,xm=w*.6,Lz=w*.38,out=rn+wt+3;
+ const ratio=isFinite(I)&&I>0?I/100:1, rc=Math.max(rn*.35,Math.min(H*.92,rn*Math.sqrt(ratio)));
+ const mapY=y0=>{const a=Math.abs(y0),sg=Math.sign(y0)||1;return a<rc?y0*rn*.94/rc:sg*(out+(a-rc)*(H-out)/(H-rc));};
+ const gasY=(x,y0)=>y0+(mapY(y0)-y0)*sstep((x-(xm-Lz))/Lz);
+ g.fillStyle=css("--accent-soft");g.globalAlpha=.6;g.fillRect(0,yc-rc,xm-Lz,2*rc);g.globalAlpha=1;
+ g.strokeStyle=css("--stream");g.lineWidth=1.4;
+ for(let i=0;i<=16;i++){const y0=-H+2*H*i/16;g.beginPath();for(let x=0;x<=w;x+=6){const y=yc+gasY(x,y0);x?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}
+ const v1=w/420, f=FLOW[id];
+ for(const p of f.p){
+  const x=p.x*w, yg=gasY(x,p.y*H), y=p.y*H+(yg-p.y*H)*(1-p.k);
+  if(!reduce){const inside=x>xm&&Math.abs(y)<rn;p.x+=(inside?v1*ratio:v1)/w;
+   if(p.k&&x>=xm&&x<xm+6&&Math.abs(y)>=rn&&Math.abs(y)<=rn+wt){p.x=0;p.y=Math.random()*2-1;}
+   if(p.x>1){p.x=0;p.y=Math.random()*2-1;}}
+  g.fillStyle=p.k?css("--fg"):css("--muted");g.beginPath();g.arc(x,yc+y,p.k?3.2:1.8,0,7);g.fill();
+ }
+ g.fillStyle=css("--muted");g.fillRect(xm,yc-rn-wt,w-xm,wt);g.fillRect(xm,yc+rn,w-xm,wt);
+ g.fillStyle=css("--fg");g.font=lang==="ar"?"600 13px 'IBM Plex Sans Arabic', sans-serif":"600 12px 'JetBrains Mono', monospace";g.textBaseline="top";
+ g.fillText(t("cvStack"),8,8);g.fillText(t("cvNozzle"),xm+8,Math.max(2,yc-rn-wt-18));
+ g.fillStyle=css("--muted");g.font="11px 'JetBrains Mono', monospace";g.textBaseline="bottom";
+ g.fillText(`V₂/V₁ = ${ratio.toFixed(2)}`,8,h-6);
+}
+let learnI=100, heroT=0;
+function drawHero(){const cv=$("heroCv"),w=cv.clientWidth,h=cv.clientHeight;if(!w)return;const dpr=window.devicePixelRatio||1;
+ if(cv.width!==Math.round(w*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+ const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);if(!reduce)heroT+=.008;
+ g.strokeStyle="rgba(95,212,225,.35)";g.lineWidth=1;
+ for(let i=0;i<9;i++){const yb=h*.15+i*h*.09;g.beginPath();for(let x=0;x<=w;x+=8){const y=yb+Math.sin(x/90+heroT*2+i*.6)*6;x?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}
+}
+function loop(){
+ if(cur==="display")drawFlow("flowD",R.I);
+ if(cur==="learn")drawFlow("flowL",learnI);
+ if(cur==="home")drawHero();
+ requestAnimationFrame(loop);
+}
+
+/* ---- learn ---- */
+function setLearn(v){learnI=v;$("lSlider").value=v;
+ $("lLbl").innerHTML=t("lLbl",{p:`<span class="ltr">${v}%</span>`});
+ const k=v>104?"o":v<96?"u":"i";
+ $("lText").innerHTML=`<h3 style="color:var(--${k==="i"?"ok":k==="u"?"warn":"bad"})">${t("L_"+k+"_t")}</h3><p>${t("L_"+k)}</p>`;
+ document.querySelectorAll("[data-l]").forEach(b=>b.setAttribute("aria-pressed",(k==="i"&&b.dataset.l==="100")||(k==="o"&&b.dataset.l==="160")||(k==="u"&&b.dataset.l==="55")));
+ const bias=100/v;$("lBias").textContent=bias.toFixed(2);$("lErr").textContent=(bias>=1?"+":"")+((bias-1)*100).toFixed(0)+"%";}
+document.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>setLearn(+b.dataset.l));
+$("lSlider").oninput=e=>setLearn(+e.target.value);
+
+/* ---- trends ---- */
+let trendView="this";
+function niceStep(x){const p=10**Math.floor(Math.log10(x||1)),m=x/p;return (m<=1?1:m<=2?2:m<=5?5:10)*p}
+function axes(g,w,h,lo,hi,Lp,Rm,Tp,ph,unit){
+ const step=niceStep((hi-lo)/4);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
+ const Y=v=>Tp+(hi-v)/(hi-lo)*ph;
+ g.font="11px 'JetBrains Mono', monospace";g.textAlign="right";g.textBaseline="middle";
+ for(let v=lo;v<=hi+1e-9;v+=step){g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();g.moveTo(Lp,Y(v));g.lineTo(w-Rm,Y(v));g.stroke();g.fillStyle=css("--muted");g.fillText(+v.toFixed(3)+(unit||""),Lp-6,Y(v));}
+ return Y;
+}
+function chart(cv,log,series,opt){
+ const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;if(!w)return;
+ cv.width=w*dpr;cv.height=h*dpr;const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+ const Lp=50,Rm=12,Tp=12,B=26,pw=w-Lp-Rm,ph=h-Tp-B,n=log.length;
+ let vals=series.flatMap(s=>log.map(s.f)).filter(isFinite);
+ if(!vals.length){g.fillStyle=css("--muted");g.font="13px Barlow,'IBM Plex Sans Arabic',sans-serif";g.textAlign="start";g.fillText(t("noData"),Lp,Tp+20);return;}
+ if(opt.band)vals.push(...opt.band);
+ let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo)*.12||Math.abs(hi)*.1||1;lo-=pad;hi+=pad;
+ const Y=axes(g,w,h,lo,hi,Lp,Rm,Tp,ph,opt.unit), Xp=i=>Lp+(n<2?pw/2:i/(n-1)*pw);
+ if(opt.band){g.fillStyle=css("--ok-soft");g.fillRect(Lp,Y(opt.band[1]),pw,Y(opt.band[0])-Y(opt.band[1]));g.strokeStyle=css("--ok");g.setLineDash([4,4]);for(const b of opt.band){g.beginPath();g.moveTo(Lp,Y(b));g.lineTo(w-Rm,Y(b));g.stroke();}g.setLineDash([]);}
+ g.textAlign="center";g.textBaseline="top";g.fillStyle=css("--muted");
+ const ticks=Math.min(4,n);for(let k=0;k<ticks;k++){const i=Math.round(k*(n-1)/Math.max(1,ticks-1));g.fillText(String(log[i].t),Math.min(Math.max(Xp(i),Lp+24),w-Rm-24),h-B+7);}
+ for(const s of series){const col=css(s.c);g.strokeStyle=col;g.lineWidth=2;g.beginPath();let st=false;
+  log.forEach((d,i)=>{const v=s.f(d);if(!isFinite(v))return;st?g.lineTo(Xp(i),Y(v)):g.moveTo(Xp(i),Y(v));st=true});g.stroke();
+  const last=log[n-1];if(last&&isFinite(s.f(last))){g.fillStyle=col;g.beginPath();g.arc(Xp(n-1),Y(s.f(last)),4,0,7);g.fill();}}
+}
+function chartAll(){
+ const cv=$("cAll"),dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;if(!w)return;
+ cv.width=w*dpr;cv.height=h*dpr;const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+ const Lp=50,Rm=12,Tp=12,B=22,pw=w-Lp-Rm,ph=h-Tp-B;
+ const list=stacks.filter(s=>s.log.length);
+ $("allLegend").innerHTML=stacks.map(s=>`<span style="--c:${colorOf(s)}">${esc(s.name)}${s.log.length?"":" ("+t("src_manual")+")"}</span>`).join("");
+ const vals=list.flatMap(s=>s.log.map(d=>d.I)).filter(isFinite);
+ if(!vals.length){g.fillStyle=css("--muted");g.font="13px Barlow,'IBM Plex Sans Arabic',sans-serif";g.fillText(t("noData"),Lp,Tp+20);return;}
+ vals.push(100);let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo)*.1||5;lo-=pad;hi+=pad;
+ const Y=axes(g,w,h,lo,hi,Lp,Rm,Tp,ph,"%");
+ g.strokeStyle=css("--muted");g.setLineDash([5,4]);g.beginPath();g.moveTo(Lp,Y(100));g.lineTo(w-Rm,Y(100));g.stroke();g.setLineDash([]);
+ for(const s of list){const d=s.log,n=d.length,col=css(`--c${stacks.indexOf(s)%6+1}`);
+  g.strokeStyle=col;g.lineWidth=s.id===activeId?2.6:1.6;g.beginPath();let st=false;
+  d.forEach((p,i)=>{if(!isFinite(p.I))return;const x=Lp+(n<2?pw:i/(n-1)*pw);st?g.lineTo(x,Y(p.I)):g.moveTo(x,Y(p.I));st=true});g.stroke();
+  const last=d[n-1];if(last&&isFinite(last.I)){g.fillStyle=col;g.beginPath();g.arc(Lp+pw,Y(last.I),3.5,0,7);g.fill();}}
+}
+function drawAll(){
+ const st=act(),s=stdOf(st);
+ $("thisBox").hidden=trendView!=="this"; $("allBox").hidden=trendView!=="all";
+ $("vThis").setAttribute("aria-pressed",trendView==="this"); $("vAll").setAttribute("aria-pressed",trendView==="all");
+ $("histBox").hidden=st.src!=="hist"||trendView!=="this"; $("manualNote").hidden=st.src!=="manual"||trendView!=="this";
+ if(trendView==="all"){chartAll();$("stats").innerHTML="";return;}
+ chart($("cIso"),st.log,[{f:d=>d.I,c:"--accent"}],{band:[s.lo,s.hi],unit:"%"});
+ chart($("cVel"),st.log,[{f:d=>d.Ve,c:"--fg"},{f:d=>d.Vf,c:"--accent"}],{});
+ const v=st.log.filter(d=>isFinite(d.I));if(!v.length){$("stats").innerHTML="";return;}
+ const inb=v.filter(d=>d.I>=s.lo&&d.I<=s.hi).length,mean=v.reduce((a,d)=>a+d.I,0)/v.length;
+ $("stats").innerHTML=`<div><div class="k">${t("samples")}</div><div class="v">${v.length}</div></div><div><div class="k">${t("meanI")}</div><div class="v">${mean.toFixed(1)}%</div></div><div><div class="k">${t("minmax")}</div><div class="v">${Math.min(...v.map(d=>d.I)).toFixed(0)}/${Math.max(...v.map(d=>d.I)).toFixed(0)}%</div></div><div><div class="k">${t("within",{lo:s.lo,hi:s.hi})}</div><div class="v">${(inb/v.length*100).toFixed(0)}%</div></div>`;
+}
+$("vThis").onclick=()=>{trendView="this";updateSrcUI();drawAll();};
+$("vAll").onclick=()=>{trendView="all";updateSrcUI();drawAll();};
+function plotCSV(){const st=act();st.csv=$("csv").value;loadHist(st);updateSrcUI();commit();}
+$("pause").onclick=()=>{paused=!paused;$("pause").textContent=paused?t("resume"):t("pause")};
+$("plot").onclick=plotCSV;$("sample").onclick=()=>{$("csv").value=sampleCSVfor(act());plotCSV()};
+$("file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$("csv").value=r.result;plotCSV()};r.readAsText(f)};
+$("copyCsv").onclick=async()=>{
+ const st=act(),txt="time,stack_flow_m3s,probe_flow_m3s,stack_T_K,stack_P_kPa,Ve_ms,Vf_ms,isokinetic_pct\n"+st.log.map(d=>[d.t,d.x.Qs,d.x.Qf,d.x.Ts.toFixed(2),d.x.Ps,d.Ve.toFixed(4),d.Vf.toFixed(4),d.I.toFixed(2)].join(",")).join("\n");
+ try{await navigator.clipboard.writeText(txt);toast(t("copied"));}catch(e){toast(t("clipBlocked"));}
+};
+window.addEventListener("resize",()=>{if(cur==="trends")drawAll();if(cur==="stacks")updateLive();});
+
+/* ---- start ---- */
+const savedLang=load();
+stacks.forEach(prepare);
+loadEditor();
+const navL=(navigator.language||"en").slice(0,2);
+setLang(savedLang||(T[navL]?navL:"en"));
+show(location.hash.slice(1)||"home");
+requestAnimationFrame(loop);
+
+</script>
+
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
+</body></html>
